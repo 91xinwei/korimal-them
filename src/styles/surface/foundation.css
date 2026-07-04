@@ -1636,8 +1636,8 @@
   white-space: nowrap;
 }
 
-.status-overview-item[data-id="traffic"] .status-overview-value,
-.status-overview-item[data-id="rate"] .status-overview-value {
+.status-overview-item[data-source-id="traffic"] .status-overview-value,
+.status-overview-item[data-source-id="rate"] .status-overview-value {
   font-size: 18px;
 }
 
@@ -1718,6 +1718,26 @@
 }
 
 .status-overview-flow span:nth-child(2) svg {
+  color: var(--status-success);
+}
+
+.status-overview-single-flow {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-overview-single-flow svg {
+  flex: 0 0 auto;
+  color: var(--progress-cpu);
+}
+
+.status-overview-item[data-id$="-down"] .status-overview-single-flow svg {
   color: var(--status-success);
 }
 

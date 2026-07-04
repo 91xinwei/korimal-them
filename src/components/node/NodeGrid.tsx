@@ -121,6 +121,7 @@ export function NodeGrid() {
       <StatusOverview
         topInfo={visualStyle.topInfo}
         topInfoProgress={visualStyle.topInfoProgress}
+        topInfoSplit={visualStyle.topInfoSplit}
         topInfoOrder={visualStyle.topInfoOrder}
         topInfoColumns={visualStyle.topInfoColumns}
       />

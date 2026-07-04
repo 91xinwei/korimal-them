@@ -4,12 +4,14 @@ import { useVisibleNodes } from "@/hooks/useNode";
 import {
   DEFAULT_TOP_INFO_ORDER,
   DEFAULT_TOP_INFO_PROGRESS_SETTINGS,
+  DEFAULT_TOP_INFO_SPLIT_SETTINGS,
   DEFAULT_TOP_INFO_SETTINGS,
   type TopInfoColumnCount,
   type TopInfoItemId,
   type TopInfoProgressItemId,
   type TopInfoProgressSettings,
   type TopInfoSettings,
+  type TopInfoSplitSettings,
 } from "@/hooks/useVisualStyle";
 import { formatBytes, formatTrafficRateLabel } from "@/utils/format";
 
@@ -42,13 +44,27 @@ function formatCores(value: number) {
 interface StatusOverviewProps {
   topInfo?: TopInfoSettings;
   topInfoProgress?: TopInfoProgressSettings;
+  topInfoSplit?: TopInfoSplitSettings;
   topInfoOrder?: TopInfoItemId[];
   topInfoColumns?: TopInfoColumnCount;
+}
+
+type StatusOverviewTone = "cpu" | "memory" | "disk";
+
+interface StatusOverviewItem {
+  id: string;
+  sourceId: TopInfoItemId;
+  label: string;
+  value: string | ReactNode;
+  detail?: string;
+  progress?: number;
+  tone?: StatusOverviewTone;
 }
 
 export function StatusOverview({
   topInfo = DEFAULT_TOP_INFO_SETTINGS,
   topInfoProgress = DEFAULT_TOP_INFO_PROGRESS_SETTINGS,
+  topInfoSplit = DEFAULT_TOP_INFO_SPLIT_SETTINGS,
   topInfoOrder = DEFAULT_TOP_INFO_ORDER,
   topInfoColumns = 0,
 }: StatusOverviewProps) {
@@ -116,31 +132,25 @@ export function StatusOverview({
     };
   }, [nodes]);
 
-  const items = useMemo<
-    Array<{
-      id: TopInfoItemId;
-      label: string;
-      value: string | ReactNode;
-      detail?: string;
-      progress?: number;
-      tone?: "cpu" | "memory" | "disk";
-    }>
-  >(
+  const items = useMemo<StatusOverviewItem[]>(
     () => [
       {
         id: "time",
+        sourceId: "time",
         label: "当前时间",
         value: formatClock(now),
         detail: "实时刷新",
       },
       {
         id: "total",
+        sourceId: "total",
         label: "节点总数",
         value: String(stats.total),
         detail: "当前可见节点",
       },
       {
         id: "online",
+        sourceId: "online",
         label: "当前在线",
         value: `${stats.online} / ${stats.total}`,
         detail:
@@ -151,12 +161,14 @@ export function StatusOverview({
       },
       {
         id: "regions",
+        sourceId: "regions",
         label: "点亮地区",
         value: String(stats.regions),
         detail: "在线节点覆盖",
       },
       {
         id: "traffic",
+        sourceId: "traffic",
         label: "总上下行流量",
         value: (
           <span className="status-overview-flow">
@@ -174,6 +186,7 @@ export function StatusOverview({
       },
       {
         id: "rate",
+        sourceId: "rate",
         label: "总流量速率",
         value: (
           <span className="status-overview-flow">
@@ -191,6 +204,7 @@ export function StatusOverview({
       },
       {
         id: "cpu",
+        sourceId: "cpu",
         label: "总 CPU",
         value: `${formatCores(stats.cpuCores)} 核`,
         detail: `平均占用 ${formatPercent(stats.cpuAverage)}%`,
@@ -199,6 +213,7 @@ export function StatusOverview({
       },
       {
         id: "memory",
+        sourceId: "memory",
         label: "总内存",
         value: formatBytes(stats.memoryTotal),
         detail: `已用 ${formatBytes(stats.memoryUsed)} / ${formatPercent(stats.memoryPct)}%`,
@@ -207,6 +222,7 @@ export function StatusOverview({
       },
       {
         id: "disk",
+        sourceId: "disk",
         label: "总硬盘",
         value: formatBytes(stats.diskTotal),
         detail: `已用 ${formatBytes(stats.diskUsed)} / ${formatPercent(stats.diskPct)}%`,
@@ -218,24 +234,27 @@ export function StatusOverview({
   );
 
   const visibleItems = useMemo(() => {
-    const itemById = new Map(items.map((item) => [item.id, item]));
+    const itemById = new Map(items.map((item) => [item.sourceId, item]));
     const seen = new Set<TopInfoItemId>();
     const ordered = topInfoOrder
       .map((id) => itemById.get(id))
-      .filter((item): item is (typeof items)[number] => Boolean(item))
+      .filter((item): item is StatusOverviewItem => Boolean(item))
       .filter((item) => {
-        if (seen.has(item.id)) return false;
-        seen.add(item.id);
+        if (seen.has(item.sourceId)) return false;
+        seen.add(item.sourceId);
         return true;
       });
 
     for (const item of items) {
-      if (seen.has(item.id)) continue;
+      if (seen.has(item.sourceId)) continue;
+      seen.add(item.sourceId);
       ordered.push(item);
     }
 
-    return ordered.filter((item) => topInfo[item.id]);
-  }, [items, topInfo, topInfoOrder]);
+    return ordered
+      .filter((item) => topInfo[item.sourceId])
+      .flatMap((item) => expandTopInfoItem(item, stats, topInfoSplit));
+  }, [items, stats, topInfo, topInfoOrder, topInfoSplit]);
   const orderKey = visibleItems.map((item) => item.id).join("|");
 
   if (visibleItems.length === 0) return null;
@@ -251,12 +270,13 @@ export function StatusOverview({
         <OverviewItem
           key={item.id}
           id={item.id}
+          sourceId={item.sourceId}
           label={item.label}
           value={item.value}
           detail={item.detail}
           progress={item.progress}
           showProgress={getTopInfoProgressVisibility(
-            item.id,
+            item.sourceId,
             item.progress,
             topInfoProgress,
           )}
@@ -270,6 +290,7 @@ export function StatusOverview({
 
 function OverviewItem({
   id,
+  sourceId,
   label,
   value,
   detail,
@@ -278,13 +299,14 @@ function OverviewItem({
   tone,
   order,
 }: {
-  id: TopInfoItemId;
+  id: string;
+  sourceId: TopInfoItemId;
   label: string;
   value: string | ReactNode;
   detail?: string;
   progress?: number;
   showProgress: boolean;
-  tone?: "cpu" | "memory" | "disk";
+  tone?: StatusOverviewTone;
   order: number;
 }) {
   const hasProgress = showProgress && typeof progress === "number";
@@ -294,6 +316,7 @@ function OverviewItem({
     <div
       className="status-overview-item"
       data-id={id}
+      data-source-id={sourceId}
       data-tone={tone}
       style={{ order } satisfies CSSProperties}
     >
@@ -319,10 +342,81 @@ function isTopInfoProgressItem(id: TopInfoItemId): id is TopInfoProgressItemId {
 }
 
 function getTopInfoProgressVisibility(
-  id: TopInfoItemId,
+  sourceId: TopInfoItemId,
   progress: number | undefined,
   settings: TopInfoProgressSettings,
 ) {
   if (typeof progress !== "number") return false;
-  return isTopInfoProgressItem(id) ? settings[id] !== false : true;
+  return isTopInfoProgressItem(sourceId) ? settings[sourceId] !== false : true;
+}
+
+function expandTopInfoItem(
+  item: StatusOverviewItem,
+  stats: {
+    trafficUp: number;
+    trafficDown: number;
+    rateUp: number;
+    rateDown: number;
+  },
+  split: TopInfoSplitSettings,
+): StatusOverviewItem[] {
+  if (item.sourceId === "traffic" && split.traffic) {
+    return [
+      {
+        id: "traffic-up",
+        sourceId: "traffic",
+        label: "总上传流量",
+        value: (
+          <span className="status-overview-single-flow">
+            <ArrowUp size={14} />
+            {formatBytes(stats.trafficUp)}
+          </span>
+        ),
+        detail: "累计上传",
+      },
+      {
+        id: "traffic-down",
+        sourceId: "traffic",
+        label: "总下载流量",
+        value: (
+          <span className="status-overview-single-flow">
+            <ArrowDown size={14} />
+            {formatBytes(stats.trafficDown)}
+          </span>
+        ),
+        detail: "累计下载",
+      },
+    ];
+  }
+
+  if (item.sourceId === "rate" && split.rate) {
+    return [
+      {
+        id: "rate-up",
+        sourceId: "rate",
+        label: "总上行速率",
+        value: (
+          <span className="status-overview-single-flow">
+            <ArrowUp size={14} />
+            {formatTrafficRateLabel(stats.rateUp)}
+          </span>
+        ),
+        detail: "实时上行",
+      },
+      {
+        id: "rate-down",
+        sourceId: "rate",
+        label: "总下行速率",
+        value: (
+          <span className="status-overview-single-flow">
+            <ArrowDown size={14} />
+            {formatTrafficRateLabel(stats.rateDown)}
+          </span>
+        ),
+        detail: "实时下行",
+      },
+    ];
+  }
+
+  return [item];
 }

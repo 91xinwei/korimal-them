@@ -1250,6 +1250,7 @@ export function ThemeManage() {
               <TopInfoSettingsPanel
                 settings={draftVisualStyle.topInfo}
                 progress={draftVisualStyle.topInfoProgress}
+                split={draftVisualStyle.topInfoSplit}
                 order={draftVisualStyle.topInfoOrder}
                 columns={draftVisualStyle.topInfoColumns}
                 onChange={updateDraftVisualStyle}

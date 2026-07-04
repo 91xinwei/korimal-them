@@ -1,25 +1,29 @@
 import { useMemo, useState, type DragEvent } from "react";
-import { Eye, EyeOff, GripVertical, Percent } from "lucide-react";
+import { Eye, EyeOff, GripVertical, Percent, Split } from "lucide-react";
 import {
   TOP_INFO_COLUMN_OPTIONS,
   TOP_INFO_ITEM_OPTIONS,
   TOP_INFO_PROGRESS_ITEM_IDS,
+  TOP_INFO_SPLIT_ITEM_IDS,
   type TopInfoColumnCount,
   type TopInfoItemId,
   type TopInfoProgressItemId,
   type TopInfoProgressSettings,
   type TopInfoSettings,
+  type TopInfoSplitItemId,
+  type TopInfoSplitSettings,
   type VisualStyleSettings,
 } from "@/hooks/useVisualStyle";
 
 type TopInfoPatch = Pick<
   VisualStyleSettings,
-  "topInfo" | "topInfoProgress" | "topInfoOrder" | "topInfoColumns"
+  "topInfo" | "topInfoProgress" | "topInfoSplit" | "topInfoOrder" | "topInfoColumns"
 >;
 
 interface TopInfoSettingsPanelProps {
   settings: TopInfoSettings;
   progress: TopInfoProgressSettings;
+  split: TopInfoSplitSettings;
   order: TopInfoItemId[];
   columns: TopInfoColumnCount;
   onChange: (patch: Partial<TopInfoPatch>) => void;
@@ -29,6 +33,7 @@ interface TopInfoSettingsPanelProps {
 export function TopInfoSettingsPanel({
   settings,
   progress,
+  split,
   order,
   columns,
   onChange,
@@ -78,6 +83,18 @@ export function TopInfoSettingsPanel({
       topInfoProgress: {
         ...progress,
         [id]: !progress[id],
+      },
+    });
+  };
+
+  const isSplitItem = (id: TopInfoItemId): id is TopInfoSplitItemId =>
+    TOP_INFO_SPLIT_ITEM_IDS.includes(id as TopInfoSplitItemId);
+
+  const toggleSplit = (id: TopInfoSplitItemId) => {
+    onChange({
+      topInfoSplit: {
+        ...split,
+        [id]: !split[id],
       },
     });
   };
@@ -165,6 +182,8 @@ export function TopInfoSettingsPanel({
           const enabled = settings[option.id];
           const progressId = isProgressItem(option.id) ? option.id : null;
           const progressEnabled = progressId ? progress[progressId] : false;
+          const splitId = isSplitItem(option.id) ? option.id : null;
+          const splitEnabled = splitId ? split[splitId] : false;
 
           return (
             <div
@@ -211,6 +230,20 @@ export function TopInfoSettingsPanel({
                 >
                   <Percent size={13} />
                   <span>{progressEnabled ? "百分比条" : "已隐藏"}</span>
+                </button>
+              )}
+              {splitId && (
+                <button
+                  type="button"
+                  className="top-info-progress-toggle top-info-split-toggle"
+                  data-active={splitEnabled ? "true" : "false"}
+                  onClick={() => toggleSplit(splitId)}
+                  disabled={!enabled}
+                  title={splitEnabled ? "合并显示" : "拆开显示"}
+                  aria-pressed={splitEnabled}
+                >
+                  <Split size={13} />
+                  <span>{splitEnabled ? "已拆开" : "拆开显示"}</span>
                 </button>
               )}
             </div>

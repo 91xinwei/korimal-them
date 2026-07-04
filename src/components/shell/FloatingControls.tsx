@@ -1008,6 +1008,7 @@ export function FloatingControls() {
                 <TopInfoSettingsPanel
                   settings={visualStyle.topInfo}
                   progress={visualStyle.topInfoProgress}
+                  split={visualStyle.topInfoSplit}
                   order={visualStyle.topInfoOrder}
                   columns={visualStyle.topInfoColumns}
                   onChange={updateVisualStyle}

@@ -75,6 +75,7 @@ export type TopInfoProgressItemId = Extract<
   TopInfoItemId,
   "online" | "cpu" | "memory" | "disk"
 >;
+export type TopInfoSplitItemId = Extract<TopInfoItemId, "traffic" | "rate">;
 export type TopInfoColumnCount = 0 | 2 | 3 | 4 | 5 | 6;
 export type VisualStyleSource = "local" | "global" | "default";
 
@@ -143,6 +144,7 @@ export interface DashboardSettings {
 
 export type TopInfoSettings = Record<TopInfoItemId, boolean>;
 export type TopInfoProgressSettings = Record<TopInfoProgressItemId, boolean>;
+export type TopInfoSplitSettings = Record<TopInfoSplitItemId, boolean>;
 
 export interface VisualStyleSettings {
   cardStyle: CardStylePresetId;
@@ -151,6 +153,7 @@ export interface VisualStyleSettings {
   showTrafficQuota: boolean;
   topInfo: TopInfoSettings;
   topInfoProgress: TopInfoProgressSettings;
+  topInfoSplit: TopInfoSplitSettings;
   topInfoOrder: TopInfoItemId[];
   topInfoColumns: TopInfoColumnCount;
   dashboardSettings: DashboardSettings;
@@ -288,6 +291,14 @@ export const DEFAULT_TOP_INFO_PROGRESS_SETTINGS: TopInfoProgressSettings =
     settings[id] = true;
     return settings;
   }, {} as TopInfoProgressSettings);
+
+export const TOP_INFO_SPLIT_ITEM_IDS: TopInfoSplitItemId[] = ["traffic", "rate"];
+
+export const DEFAULT_TOP_INFO_SPLIT_SETTINGS: TopInfoSplitSettings =
+  TOP_INFO_SPLIT_ITEM_IDS.reduce((settings, id) => {
+    settings[id] = false;
+    return settings;
+  }, {} as TopInfoSplitSettings);
 
 export const DEFAULT_TOP_INFO_ORDER: TopInfoItemId[] = TOP_INFO_ITEM_OPTIONS.map(
   (option) => option.id,
@@ -897,6 +908,7 @@ export const DEFAULT_VISUAL_STYLE_SETTINGS: VisualStyleSettings = {
   showTrafficQuota: true,
   topInfo: DEFAULT_TOP_INFO_SETTINGS,
   topInfoProgress: DEFAULT_TOP_INFO_PROGRESS_SETTINGS,
+  topInfoSplit: DEFAULT_TOP_INFO_SPLIT_SETTINGS,
   topInfoOrder: DEFAULT_TOP_INFO_ORDER,
   topInfoColumns: 0,
   dashboardSettings: DEFAULT_DASHBOARD_SETTINGS,
@@ -1195,6 +1207,19 @@ function normalizeTopInfoProgressSettings(value: unknown): TopInfoProgressSettin
   }, {} as TopInfoProgressSettings);
 }
 
+function normalizeTopInfoSplitSettings(value: unknown): TopInfoSplitSettings {
+  const record = isSettingsObject(value)
+    ? (value as Partial<Record<TopInfoSplitItemId, unknown>>)
+    : {};
+
+  return TOP_INFO_SPLIT_ITEM_IDS.reduce((settings, id) => {
+    const raw = record[id];
+    settings[id] =
+      typeof raw === "boolean" ? raw : DEFAULT_TOP_INFO_SPLIT_SETTINGS[id];
+    return settings;
+  }, {} as TopInfoSplitSettings);
+}
+
 function isTopInfoItem(value: unknown): value is TopInfoItemId {
   return (
     typeof value === "string" &&
@@ -1258,6 +1283,7 @@ export function normalizeVisualStyleSettings(value: unknown): VisualStyleSetting
         : DEFAULT_VISUAL_STYLE_SETTINGS.showTrafficQuota,
     topInfo: normalizeTopInfoSettings(record.topInfo),
     topInfoProgress: normalizeTopInfoProgressSettings(record.topInfoProgress),
+    topInfoSplit: normalizeTopInfoSplitSettings(record.topInfoSplit),
     topInfoOrder: normalizeTopInfoOrder(record.topInfoOrder),
     topInfoColumns: normalizeTopInfoColumns(record.topInfoColumns),
     dashboardSettings: normalizeDashboardSettings(record.dashboardSettings),
