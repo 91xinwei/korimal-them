@@ -25,7 +25,11 @@ interface AnimationSubscriber {
 
 const MAX_CANVAS_DPR = 1.5;
 const animationSubscribers = new Set<AnimationSubscriber>();
+const resizeCallbacks = new WeakMap<Element, () => void>();
+const visibilityCallbacks = new WeakMap<Element, (visible: boolean) => void>();
 let animationFrameId: number | null = null;
+let sharedResizeObserver: ResizeObserver | null = null;
+let sharedIntersectionObserver: IntersectionObserver | null = null;
 
 function runAnimationLoop(now: number) {
   if (typeof document !== "undefined" && document.visibilityState === "hidden") {
@@ -58,6 +62,55 @@ function subscribeAnimation(subscriber: AnimationSubscriber) {
       window.cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
     }
+  };
+}
+
+function getSharedResizeObserver() {
+  if (typeof ResizeObserver === "undefined") return null;
+  sharedResizeObserver ??= new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      resizeCallbacks.get(entry.target)?.();
+    }
+  });
+  return sharedResizeObserver;
+}
+
+function observeResize(element: Element, callback: () => void) {
+  const observer = getSharedResizeObserver();
+  if (!observer) return () => undefined;
+
+  resizeCallbacks.set(element, callback);
+  observer.observe(element);
+  return () => {
+    resizeCallbacks.delete(element);
+    observer.unobserve(element);
+  };
+}
+
+function getSharedIntersectionObserver() {
+  if (typeof IntersectionObserver === "undefined") return null;
+  sharedIntersectionObserver ??= new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        visibilityCallbacks
+          .get(entry.target)
+          ?.(entry.isIntersecting || entry.intersectionRatio > 0);
+      }
+    },
+    { rootMargin: "180px" },
+  );
+  return sharedIntersectionObserver;
+}
+
+function observeVisibility(element: Element, callback: (visible: boolean) => void) {
+  const observer = getSharedIntersectionObserver();
+  if (!observer) return () => undefined;
+
+  visibilityCallbacks.set(element, callback);
+  observer.observe(element);
+  return () => {
+    visibilityCallbacks.delete(element);
+    observer.unobserve(element);
   };
 }
 
@@ -148,37 +201,43 @@ export function CanvasStrip({
 }: CanvasStripProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const visibleRef = useRef(true);
+  const resizeFrameRef = useRef<number | null>(null);
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const updateWidth = () => {
+    const measureWidth = () => {
       const nextWidth = Math.round(canvas.clientWidth);
       setWidth((current) => (current === nextWidth ? current : nextWidth));
     };
+    const scheduleWidthUpdate = () => {
+      if (resizeFrameRef.current != null) return;
+      resizeFrameRef.current = window.requestAnimationFrame(() => {
+        resizeFrameRef.current = null;
+        measureWidth();
+      });
+    };
 
-    updateWidth();
-    const observer = new ResizeObserver(() => {
-      updateWidth();
-    });
-    observer.observe(canvas);
-    return () => observer.disconnect();
+    measureWidth();
+    const unobserve = observeResize(canvas, scheduleWidthUpdate);
+    return () => {
+      unobserve();
+      if (resizeFrameRef.current != null) {
+        window.cancelAnimationFrame(resizeFrameRef.current);
+        resizeFrameRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof IntersectionObserver === "undefined") return;
+    if (!canvas) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        visibleRef.current = entry ? entry.isIntersecting || entry.intersectionRatio > 0 : true;
-      },
-      { rootMargin: "180px" },
-    );
-    observer.observe(canvas);
-    return () => observer.disconnect();
+    return observeVisibility(canvas, (visible) => {
+      visibleRef.current = visible;
+    });
   }, []);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 
 export type CardStylePresetId =
@@ -1446,14 +1446,9 @@ export function useVisualStyle() {
   const globalSettings = config?.theme_settings?.visualStyle;
   const settings = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-  const serializedGlobalSettings = useMemo(
-    () => serializeVisualStyleSettings(normalizeVisualStyleSettings(globalSettings)),
-    [globalSettings],
-  );
-
   useEffect(() => {
     applyFallbackSettings(globalSettings);
-  }, [globalSettings, serializedGlobalSettings]);
+  }, [globalSettings]);
 
   useEffect(() => {
     applyDocumentStyle(settings);

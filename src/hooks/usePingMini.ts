@@ -469,8 +469,7 @@ function getPingSnapshot(uuid: string) {
   return pingOverviewState.items.get(uuid)?.item ?? EMPTY_PING;
 }
 
-export function useHomepagePingOverview() {
-  const visibleUuids = useVisibleNodeUuids();
+function usePingOverviewScheduler(visibleUuids: string[]) {
   const { data: config } = usePublicConfig();
   const bindings = useMemo(
     () => normalizeHomepagePingTaskBindings(config?.theme_settings?.homepagePingBindings),
@@ -480,6 +479,15 @@ export function useHomepagePingOverview() {
   useEffect(() => {
     ensurePingOverviewStarted(visibleUuids, bindings);
   }, [bindings, visibleUuids]);
+}
+
+export function useHomepagePingOverview() {
+  const visibleUuids = useVisibleNodeUuids();
+  usePingOverviewScheduler(visibleUuids);
+}
+
+export function useHomepagePingOverviewForNodes(visibleUuids: string[]) {
+  usePingOverviewScheduler(visibleUuids);
 }
 
 export function usePingMini(uuid: string): PingOverviewItem {

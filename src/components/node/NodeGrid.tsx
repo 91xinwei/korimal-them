@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCanSeeHiddenNodes, useVisibleNodes } from "@/hooks/useNode";
-import { useHomepagePingOverview } from "@/hooks/usePingMini";
+import { useHomepagePingOverviewForNodes } from "@/hooks/usePingMini";
+import { usePreferences } from "@/hooks/usePreferences";
 import { useNodeSort } from "@/hooks/useNodeSort";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
-import { serializeVisualStyleSettings, useVisualStyle } from "@/hooks/useVisualStyle";
+import { useVisualStyle } from "@/hooks/useVisualStyle";
 import { getSnapshot } from "@/services/wsStore";
 import { normalizeHomepageNodeOrder } from "@/utils/nodeOrder";
 import {
@@ -24,6 +25,7 @@ export function NodeGrid() {
   const { data: config } = usePublicConfig();
   const { nodeSort } = useNodeSort();
   const { visualStyle } = useVisualStyle();
+  const { resolvedAppearance } = usePreferences();
   const pingDisplayMode = useMemo(
     () => normalizeHomepagePingDisplayMode(config?.theme_settings?.homepagePingDisplayMode),
     [config?.theme_settings?.homepagePingDisplayMode],
@@ -101,11 +103,46 @@ export function NodeGrid() {
     [nodes, realtimeUuids, staticUuids, useRealtimeSort],
   );
   const visualRedrawKey = useMemo(
-    () => serializeVisualStyleSettings(visualStyle),
-    [visualStyle],
+    () =>
+      [
+        resolvedAppearance,
+        visualStyle.marqueeStyle.shape,
+        visualStyle.marqueeStyle.density,
+        visualStyle.marqueeStyle.radius,
+        visualStyle.marqueeStyle.glow,
+        visualStyle.marqueeStyle.motion,
+        visualStyle.colors.cpu,
+        visualStyle.colors.memory,
+        visualStyle.colors.disk,
+        visualStyle.colors.load,
+        visualStyle.colors.latency,
+        visualStyle.colors.loss,
+        visualStyle.colors.up,
+        visualStyle.colors.down,
+        visualStyle.colors.peak,
+        visualStyle.colors.idle,
+      ].join("|"),
+    [
+      resolvedAppearance,
+      visualStyle.colors.cpu,
+      visualStyle.colors.disk,
+      visualStyle.colors.down,
+      visualStyle.colors.idle,
+      visualStyle.colors.latency,
+      visualStyle.colors.load,
+      visualStyle.colors.loss,
+      visualStyle.colors.memory,
+      visualStyle.colors.peak,
+      visualStyle.colors.up,
+      visualStyle.marqueeStyle.density,
+      visualStyle.marqueeStyle.glow,
+      visualStyle.marqueeStyle.motion,
+      visualStyle.marqueeStyle.radius,
+      visualStyle.marqueeStyle.shape,
+    ],
   );
   const isStripLayout = visualStyle.cardLayout === "strip";
-  useHomepagePingOverview();
+  useHomepagePingOverviewForNodes(uuids);
 
   if (uuids.length === 0) {
     return (
@@ -141,6 +178,7 @@ export function NodeGrid() {
           <div key={uuid}>
             <NodeCard
               uuid={uuid}
+              resolvedAppearance={resolvedAppearance}
               cardLayout={visualStyle.cardLayout}
               visualRedrawKey={visualRedrawKey}
               dashboardStyle={visualStyle.dashboardStyle}

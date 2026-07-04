@@ -8,10 +8,12 @@
 
 当前主题有几类核心能力：
 
-- 首页节点卡片、条形卡片、总览、排序。
+- 首页节点卡片、条形卡片、顶部信息总览、排序。
 - 节点详情页负载/Ping 历史图。
 - 图片背景板、渐变背板、本地/全局外观配置。
 - 卡片外壳、背板玻璃、信息展板、跑马灯、配色预设。
+- 顶部信息支持显示开关、拖拽排序、每行数量、百分比条开关，以及总上下行流量/总流量速率拆开显示。
+- 首页 Ping 支持未配置时自动隐藏、显示占位、仅绑定节点显示。
 - 管理员主题设置页 `?view=theme-manage`，负责保存全站默认配置。
 
 ## 运行入口
@@ -19,7 +21,7 @@
 - `src/main.tsx`：React 挂载入口。
 - `src/App.tsx`：注入 React Query 和 Router。
 - `src/router.tsx`：路由。首页 `/`、详情页 `/instance/:uuid`、404。
-- `src/components/shell/AppShell.tsx`：全局外壳，挂载背景板、快捷按钮、页面主体和 footer。
+- `src/components/shell/AppShell.tsx`：全局外壳，挂载背景板、页面主体和 footer；快捷按钮 `FloatingControls` 会在首屏空闲后懒加载。
 - `src/pages/Home.tsx`：首页。检测 `?view=theme-manage` 后懒加载主题设置页。
 
 ## 目录职责
@@ -56,11 +58,15 @@ src/
 | `src/components/shell/FloatingControls.tsx` | 首页快捷面板：卡片与样式、排序、本地外观 | 渐变背板和背板玻璃都在卡片与样式页签内，实际字段仍属于 `gradientBackground` |
 | `src/components/shell/BackgroundBoard.tsx` | 图片背景板和渐变背板实际渲染 | 背景层级、透明度、背板玻璃 CSS 变量从这里查 |
 | `src/components/node/NodeGrid.tsx` | 首页节点列表、排序、卡片布局入口 | 新增排序模式时配合 `utils/nodeSort.ts` |
+| `src/components/node/StatusOverview.tsx` | 首页顶部信息总览，渲染时间、数量、流量、速率、资源汇总 | 改顶部信息显示、拆分、进度条时从这里进 |
 | `src/components/node/NodeCard.tsx` | 节点卡片主体渲染 | 尽量只放组件结构，绘制工具放 `dashboardHelpers.tsx` |
+| `src/components/node/CanvasStrip.tsx` | 数据条/跑马灯/趋势条的 Canvas 基础组件 | 已使用共享 ResizeObserver/IntersectionObserver，新增动画不要再为每条数据创建独立全局监听 |
 | `src/components/node/dashboardHelpers.tsx` | 弧光/全环/指针/液位展板的数学、SVG、CSS 变量工具 | 新增仪表盘形态或样式优先放这里 |
 | `src/components/node/marqueeStyle.ts` | 跑马灯 canvas 绘制和动画节奏 | 新增跑马灯样式从这里进 |
+| `src/components/settings/TopInfoSettingsPanel.tsx` | 顶部信息设置面板，含显示、百分比条、拆开显示、拖拽排序、每行数量 | 新增顶部信息控制项时同步这里和 `useVisualStyle.ts` |
 | `src/hooks/useVisualStyle.ts` | 卡片外壳、展板、跑马灯、配色的类型、默认值、normalize、本地状态 | 新增视觉配置字段必须先补这里 |
 | `src/hooks/useGradientBackground.ts` | 渐变背板配置、本地/全局来源、CSS 变量设置 | 渐变预设和保存策略从这里改 |
+| `src/hooks/usePingMini.ts` | 首页 Ping mini 汇总 store、定时刷新、按节点订阅 | 首页 Ping 显示策略和绑定数据流改动要注意请求数量 |
 | `src/utils/backgroundSettings.ts` | 图片背景板配置 normalize、URL 解析、上传图来源 | 背景配置字段必须和这里保持一致 |
 | `src/utils/nodeSort.ts` | 首页排序模式和排序函数 | 新增排序模式从这里进 |
 | `src/styles/index.css` | 样式总入口 | 一般不用改 |
@@ -78,7 +84,9 @@ src/
 2. `useNode.ts` 启动 `wsStore.ensureStarted()`。
 3. `wsStore.ts` 定时拉取 `/api/nodes` 和 RPC `common:getNodesLatestStatus`。
 4. `NodeGrid` 读取 `useVisualStyle()`、`useNodeSort()` 后决定布局、排序、样式。
-5. 每张 `NodeCard` 自己读取实时节点、Ping mini 数据、流量趋势并渲染。
+5. `StatusOverview` 用可见节点聚合顶部信息，并按 `topInfoOrder`、`topInfoColumns`、`topInfoSplit` 渲染。
+6. `NodeGrid` 调用 `useHomepagePingOverviewForNodes(uuids)` 调度首页 Ping mini，复用当前排序后的节点列表。
+7. 每张 `NodeCard` 自己读取实时节点、Ping mini 数据、流量趋势并渲染；浅色/深色状态由 `NodeGrid` 统一传入，避免每张卡重复订阅外观。
 
 主题设置保存大致是：
 
@@ -163,6 +171,12 @@ interface ThemeSettings {
 - `marqueePalette` / `colors`：跑马灯指标颜色。
 - `marqueeStyle`：数据条跑马灯的形态、密度、圆角、光晕、动效。
 - `radarLatencyMaxMs`：延迟仪表上限，超过拉满。
+- `showTrafficQuota`：数据条信息展板里的出入站额度统计显示开关。
+- `topInfo`：顶部信息显示开关，项目包含当前时间、节点总数、当前在线、点亮地区、总上下行流量、总流量速率、总 CPU、总内存、总硬盘。
+- `topInfoProgress`：顶部信息百分比条开关，目前只作用于当前在线、总 CPU、总内存、总硬盘。
+- `topInfoSplit`：顶部信息拆开显示开关，目前只作用于总上下行流量和总流量速率；开启后分别渲染上传/下载、上行/下行独立卡片。
+- `topInfoOrder`：顶部信息拖拽排序结果，保存原始项目 ID，不保存拆分后的派生 ID。
+- `topInfoColumns`：顶部信息每行数量，`0` 表示自动，固定值支持 2/3/4/5/6。
 
 首页快捷面板里的渐变背板入口放在“卡片与样式”页签内，和卡片外壳、信息展板、配色同级。背板玻璃也在“卡片外壳”页签里，但配置字段仍是 `gradientBackground.tintSurfaces` 和 `gradientBackground.surfaceOpacity`，因为它依赖当前渐变背板颜色给卡片、总览和部分色块染色。
 
@@ -173,6 +187,34 @@ interface ThemeSettings {
 - `data-gradient-surfaces`
 - `--ys-metric-*`
 - `--ys-gradient-*`
+
+## 顶部信息总览
+
+顶部信息相关入口：
+
+- 配置模型：`src/hooks/useVisualStyle.ts`
+- 设置面板：`src/components/settings/TopInfoSettingsPanel.tsx`
+- 实际渲染：`src/components/node/StatusOverview.tsx`
+- 首页传参：`src/components/node/NodeGrid.tsx`
+
+注意事项：
+
+- `topInfoOrder` 只存基础项 ID，例如 `traffic`、`rate`，不存 `traffic-up`、`rate-down`。
+- `StatusOverview` 会先按 `topInfoOrder` 排序，再按 `topInfoSplit` 展开派生卡片。
+- 拆分显示仍受原始项开关控制，关闭 `traffic` 会同时关闭上传/下载两个派生卡片。
+- 右上角百分比和底部进度条由 `topInfoProgress` 控制，目前不要给流量/速率硬加百分比。
+- 流量/速率大数字容易挤压，CSS 已按 `data-source-id="traffic"` 和 `data-source-id="rate"` 做紧凑字号。
+
+## 性能注意点
+
+首屏性能最近做过优化，维护时要避免回退：
+
+- `FloatingControls` 在 `AppShell` 中通过 `DeferredFloatingControls` 懒加载，并等待 `requestIdleCallback` 或短延时后再加载；不要在首屏入口重新静态导入。
+- `CanvasStrip` 使用共享 `ResizeObserver` 和共享 `IntersectionObserver`，并用全局动画循环调度绘制；新增跑马灯/趋势条时复用 `CanvasStrip`，不要每个组件自己创建 RAF 循环。
+- `NodeGrid` 统一读取 `resolvedAppearance` 并传给 `NodeCard`，避免大量节点时每张卡重复订阅 `usePreferences()`。
+- `usePreferences()` 不再手写额外 `/api/public` 请求，默认外观跟随 `usePublicConfig()`，避免首屏重复请求。
+- 首页 Ping mini 调度使用 `useHomepagePingOverviewForNodes(uuids)`，复用当前节点列表，避免额外全局订阅和重复过滤。
+- 构建时可用 Vite 输出观察入口包体积。`v1.2.9-p1` 中入口包约从 gzip `102 kB` 降到 gzip `79 kB`。
 
 ## 常见开发入口
 

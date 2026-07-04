@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { useNode, useNodeTrafficTrend } from "@/hooks/useNode";
 import { usePingMini, usePingMiniBuckets } from "@/hooks/usePingMini";
-import { usePreferences } from "@/hooks/usePreferences";
 import {
   formatBytes,
   formatExpireDays,
@@ -84,8 +83,11 @@ import {
   type GaugeDashboardStyleId,
 } from "./dashboardHelpers";
 
+type ResolvedAppearance = "light" | "dark";
+
 export const NodeCard = memo(function NodeCard({
   uuid,
+  resolvedAppearance,
   cardLayout,
   visualRedrawKey,
   dashboardStyle,
@@ -97,6 +99,7 @@ export const NodeCard = memo(function NodeCard({
   marqueeStyle,
 }: {
   uuid: string;
+  resolvedAppearance: ResolvedAppearance;
   cardLayout: CardLayoutId;
   visualRedrawKey: string;
   dashboardStyle: DashboardStylePresetId;
@@ -107,7 +110,6 @@ export const NodeCard = memo(function NodeCard({
   radarLatencyMaxMs: number;
   marqueeStyle: MarqueeStyleSettings;
 }) {
-  const { resolvedAppearance } = usePreferences();
   const node = useNode(uuid);
   const trafficTrend = useNodeTrafficTrend(uuid);
   const ping = usePingMini(uuid);
@@ -143,7 +145,7 @@ export const NodeCard = memo(function NodeCard({
   const subtitle =
     buildSubtitle([node.group, node.public_remark]) ||
     buildSubtitle([node.os, node.arch, node.virtualization]);
-  const metricRedrawKey = `${resolvedAppearance}:${visualRedrawKey}`;
+  const metricRedrawKey = visualRedrawKey;
   const latencyTone = ping.lastValue != null
     ? "var(--ys-metric-latency, var(--status-online))"
     : "var(--text-tertiary)";

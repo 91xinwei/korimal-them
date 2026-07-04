@@ -19,7 +19,6 @@ const DEFAULTS: PrefsState = {
 
 let themeFlipTimer: number | null = null;
 let hasExplicitAppearancePreference = false;
-let defaultAppearanceSyncPromise: Promise<void> | null = null;
 let systemAppearanceMediaQuery: MediaQueryList | null = null;
 
 function isAppearance(value: unknown): value is Appearance {
@@ -82,6 +81,7 @@ function persistDefaultAppearance(value: Appearance) {
 
 const listeners = new Set<() => void>();
 let snapshot: PrefsState = { ...DEFAULTS };
+let appearanceApplied = false;
 
 function emit() {
   for (const l of listeners) l();
@@ -114,51 +114,18 @@ function commit(next: Partial<PrefsState>) {
   if (next.appearance) {
     merged.resolvedAppearance = resolveAppearance(merged.appearance);
   }
+  const changed =
+    snapshot.appearance !== merged.appearance ||
+    snapshot.resolvedAppearance !== merged.resolvedAppearance;
+
   if (snapshot.resolvedAppearance !== merged.resolvedAppearance) {
     markThemeFlip();
   }
   snapshot = merged;
+  if (!changed && appearanceApplied) return;
   applyResolvedAppearance(merged.resolvedAppearance);
-  emit();
-}
-
-function syncDefaultAppearanceFromPublicConfig() {
-  if (hasExplicitAppearancePreference || defaultAppearanceSyncPromise) {
-    return defaultAppearanceSyncPromise;
-  }
-
-  defaultAppearanceSyncPromise = fetch("/api/public", {
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  })
-    .then(async (resp) => {
-      if (!resp.ok) {
-        throw new Error(`Request /api/public failed: ${resp.status}`);
-      }
-      return (await resp.json()) as {
-        data?: {
-          theme_settings?: {
-            defaultAppearance?: unknown;
-          };
-        };
-      };
-    })
-    .then((payload) => {
-      if (hasExplicitAppearancePreference) return;
-      const appearance = normalizeAppearance(
-        payload?.data?.theme_settings?.defaultAppearance,
-      );
-      persistDefaultAppearance(appearance);
-      commit({ appearance });
-    })
-    .catch(() => {
-      // Keep the local fallback when public config is temporarily unavailable.
-    })
-    .finally(() => {
-      defaultAppearanceSyncPromise = null;
-    });
-
-  return defaultAppearanceSyncPromise;
+  appearanceApplied = true;
+  if (changed) emit();
 }
 
 let initialized = false;
@@ -171,9 +138,6 @@ function initIfNeeded() {
     persistAppearance(stored.appearance);
   }
   commit({ appearance: stored.appearance });
-  if (!stored.hasExplicitPreference) {
-    void syncDefaultAppearanceFromPublicConfig();
-  }
   const refreshSystemAppearance = () => {
     if (snapshot.appearance === "system") {
       commit({ appearance: "system" });
