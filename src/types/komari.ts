@@ -187,6 +187,7 @@ export interface ThemeSettings {
   showTraffic?: boolean;
   offlineNodesBehind?: boolean;
   homepagePingBindings?: Record<string, string[]>;
+  homepagePingDisplayMode?: "auto" | "placeholder" | "assigned";
   homepageNodeOrder?: string[];
   homepageNodeSort?: unknown;
   gradientBackground?: unknown;

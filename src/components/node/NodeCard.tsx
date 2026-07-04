@@ -35,6 +35,10 @@ import {
   parseTags,
 } from "@/utils/format";
 import { getExpireTextColor } from "@/utils/expireStatus";
+import {
+  shouldShowPingMetrics,
+  type HomepagePingDisplayMode,
+} from "@/utils/pingDisplay";
 import { Flag } from "@/components/ui/Flag";
 import { MetricBar } from "./MetricBar";
 import { MiniBars } from "./MiniBars";
@@ -86,6 +90,8 @@ export const NodeCard = memo(function NodeCard({
   visualRedrawKey,
   dashboardStyle,
   showTrafficQuota,
+  pingDisplayMode,
+  hasAnyHomepagePingBinding,
   dashboardSettings,
   radarLatencyMaxMs,
   marqueeStyle,
@@ -95,6 +101,8 @@ export const NodeCard = memo(function NodeCard({
   visualRedrawKey: string;
   dashboardStyle: DashboardStylePresetId;
   showTrafficQuota: boolean;
+  pingDisplayMode: HomepagePingDisplayMode;
+  hasAnyHomepagePingBinding: boolean;
   dashboardSettings: DashboardSettings;
   radarLatencyMaxMs: number;
   marqueeStyle: MarqueeStyleSettings;
@@ -157,6 +165,11 @@ export const NodeCard = memo(function NodeCard({
   });
   const lossHoverColor = hoveredLossBucket ? lossTone : null;
   const hasHomepagePingBinding = ping.isAssigned;
+  const showPingMetrics = shouldShowPingMetrics(
+    pingDisplayMode,
+    hasAnyHomepagePingBinding,
+    hasHomepagePingBinding,
+  );
   const isOnline = node.online === true;
   const isOffline = node.online === false;
   const statusColor =
@@ -314,18 +327,22 @@ export const NodeCard = memo(function NodeCard({
               value={`${downRate.value} ${downRate.unit}`}
               color="var(--ys-marquee-down, var(--status-success))"
             />
-            <StripStat
-              icon={<Clock3 size={12} strokeWidth={2} />}
-              label="延迟"
-              value={latencyText}
-              color={latencyTone}
-            />
-            <StripStat
-              icon={<Unplug size={12} strokeWidth={2} />}
-              label="丢包"
-              value={lossText}
-              color={lossTone}
-            />
+            {showPingMetrics && (
+              <>
+                <StripStat
+                  icon={<Clock3 size={12} strokeWidth={2} />}
+                  label="延迟"
+                  value={latencyText}
+                  color={latencyTone}
+                />
+                <StripStat
+                  icon={<Unplug size={12} strokeWidth={2} />}
+                  label="丢包"
+                  value={lossText}
+                  color={lossTone}
+                />
+              </>
+            )}
             <StripStat
               icon={<Calendar size={12} strokeWidth={2} />}
               label="到期"
@@ -425,6 +442,7 @@ export const NodeCard = memo(function NodeCard({
             latencyMaxMs={radarLatencyMaxMs}
             loss={ping.loss}
             hasHomepagePingBinding={hasHomepagePingBinding}
+            showPingMetrics={showPingMetrics}
           />
         ) : gaugeDashboardStyle ? (
           <RadarMetricPanel
@@ -447,6 +465,7 @@ export const NodeCard = memo(function NodeCard({
             latencyMaxMs={radarLatencyMaxMs}
             loss={ping.loss}
             hasHomepagePingBinding={hasHomepagePingBinding}
+            showPingMetrics={showPingMetrics}
           />
         ) : (
           <div className="server-card-stack">
@@ -533,104 +552,106 @@ export const NodeCard = memo(function NodeCard({
               )}
             </div>
 
-            <div className="card-metric-section card-metric-divided server-health-grid">
-              <div className="server-health-block">
-                <div className="server-health-head">
-                  <div className="server-health-label">
-                    <Clock3 size={13} strokeWidth={2} />
-                    <span>延迟</span>
-                  </div>
-                  <span className="server-health-value tabular" style={{ color: latencyTone }}>
-                    {ping.lastValue != null ? (
-                      <>
-                        {Math.round(ping.lastValue)}
-                        <span className="server-health-unit">ms</span>
-                      </>
-                    ) : (
-                      <span
-                        className="server-health-empty"
-                        title={hasHomepagePingBinding ? "暂无有效样本" : "未配置首页 Ping"}
-                      >
-                        {hasHomepagePingBinding ? "无样本" : "未配置"}
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="server-health-chart-wrap">
-                  {hasHomepagePingBinding ? (
-                    <MiniBars
-                      values={ping.values}
-                      max={ping.max}
-                      lastValue={ping.lastValue ?? undefined}
-                      buckets={pingBuckets}
-                      color="var(--ys-metric-latency, var(--status-online))"
-                      marqueeStyle={marqueeStyle}
-                      redrawKey={metricRedrawKey}
-                      onHoverIndex={setHoveredLatencyIndex}
-                    />
-                  ) : (
-                    <div className="server-health-placeholder">未配置首页 Ping</div>
-                  )}
-                  {latencyHoverTime && hoveredLatencyBucket && (
-                    <div className="server-health-tooltip">
-                      <div className="instance-chart-tooltip-time">{latencyHoverTime}</div>
-                      <div className="instance-chart-tooltip-row">
-                        <span className="instance-chart-tooltip-dot" style={{ background: latencyHoverColor }} />
-                        <span>延迟</span>
-                        <strong>{formatLatencyBucketSummary(hoveredLatencyBucket)}</strong>
-                      </div>
+            {showPingMetrics && (
+              <div className="card-metric-section card-metric-divided server-health-grid">
+                <div className="server-health-block">
+                  <div className="server-health-head">
+                    <div className="server-health-label">
+                      <Clock3 size={13} strokeWidth={2} />
+                      <span>延迟</span>
                     </div>
-                  )}
+                    <span className="server-health-value tabular" style={{ color: latencyTone }}>
+                      {ping.lastValue != null ? (
+                        <>
+                          {Math.round(ping.lastValue)}
+                          <span className="server-health-unit">ms</span>
+                        </>
+                      ) : (
+                        <span
+                          className="server-health-empty"
+                          title={hasHomepagePingBinding ? "暂无有效样本" : "未配置首页 Ping"}
+                        >
+                          {hasHomepagePingBinding ? "无样本" : "未配置"}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="server-health-chart-wrap">
+                    {hasHomepagePingBinding ? (
+                      <MiniBars
+                        values={ping.values}
+                        max={ping.max}
+                        lastValue={ping.lastValue ?? undefined}
+                        buckets={pingBuckets}
+                        color="var(--ys-metric-latency, var(--status-online))"
+                        marqueeStyle={marqueeStyle}
+                        redrawKey={metricRedrawKey}
+                        onHoverIndex={setHoveredLatencyIndex}
+                      />
+                    ) : (
+                      <div className="server-health-placeholder">未配置首页 Ping</div>
+                    )}
+                    {latencyHoverTime && hoveredLatencyBucket && (
+                      <div className="server-health-tooltip">
+                        <div className="instance-chart-tooltip-time">{latencyHoverTime}</div>
+                        <div className="instance-chart-tooltip-row">
+                          <span className="instance-chart-tooltip-dot" style={{ background: latencyHoverColor }} />
+                          <span>延迟</span>
+                          <strong>{formatLatencyBucketSummary(hoveredLatencyBucket)}</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="server-health-block">
+                  <div className="server-health-head">
+                    <div className="server-health-label">
+                      <Unplug size={13} strokeWidth={2} />
+                      <span>丢包率</span>
+                    </div>
+                    <span className="server-health-value tabular" style={{ color: lossTone }}>
+                      {ping.loss != null ? (
+                        <>
+                          {ping.loss.toFixed(1)}
+                          <span className="server-health-unit">%</span>
+                        </>
+                      ) : (
+                        <span
+                          className="server-health-empty"
+                          title={hasHomepagePingBinding ? "暂无有效样本" : "未配置首页 Ping"}
+                        >
+                          {hasHomepagePingBinding ? "无样本" : "未配置"}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="server-health-chart-wrap">
+                    {hasHomepagePingBinding ? (
+                      <QualityBars
+                        value={ping.loss}
+                        buckets={pingBuckets}
+                        color="var(--ys-metric-loss, var(--status-offline))"
+                        marqueeStyle={marqueeStyle}
+                        redrawKey={metricRedrawKey}
+                        onHoverIndex={setHoveredLossIndex}
+                      />
+                    ) : (
+                      <div className="server-health-placeholder">未配置首页 Ping</div>
+                    )}
+                    {lossHoverTime && hoveredLossBucket && (
+                      <div className="server-health-tooltip">
+                        <div className="instance-chart-tooltip-time">{lossHoverTime}</div>
+                        <div className="instance-chart-tooltip-row">
+                          <span className="instance-chart-tooltip-dot" style={{ background: lossHoverColor ?? lossTone }} />
+                          <span>丢包率</span>
+                          <strong>{formatLossBucketSummary(hoveredLossBucket)}</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="server-health-block">
-                <div className="server-health-head">
-                  <div className="server-health-label">
-                    <Unplug size={13} strokeWidth={2} />
-                    <span>丢包率</span>
-                  </div>
-                  <span className="server-health-value tabular" style={{ color: lossTone }}>
-                    {ping.loss != null ? (
-                      <>
-                        {ping.loss.toFixed(1)}
-                        <span className="server-health-unit">%</span>
-                      </>
-                    ) : (
-                      <span
-                        className="server-health-empty"
-                        title={hasHomepagePingBinding ? "暂无有效样本" : "未配置首页 Ping"}
-                      >
-                        {hasHomepagePingBinding ? "无样本" : "未配置"}
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="server-health-chart-wrap">
-                  {hasHomepagePingBinding ? (
-                    <QualityBars
-                      value={ping.loss}
-                      buckets={pingBuckets}
-                      color="var(--ys-metric-loss, var(--status-offline))"
-                      marqueeStyle={marqueeStyle}
-                      redrawKey={metricRedrawKey}
-                      onHoverIndex={setHoveredLossIndex}
-                    />
-                  ) : (
-                    <div className="server-health-placeholder">未配置首页 Ping</div>
-                  )}
-                  {lossHoverTime && hoveredLossBucket && (
-                    <div className="server-health-tooltip">
-                      <div className="instance-chart-tooltip-time">{lossHoverTime}</div>
-                      <div className="instance-chart-tooltip-row">
-                        <span className="instance-chart-tooltip-dot" style={{ background: lossHoverColor ?? lossTone }} />
-                        <span>丢包率</span>
-                        <strong>{formatLossBucketSummary(hoveredLossBucket)}</strong>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -696,6 +717,7 @@ function LiquidMetricPanel({
   latencyMaxMs,
   loss,
   hasHomepagePingBinding,
+  showPingMetrics,
 }: {
   settings: LiquidDashboardSettings;
   cpuPct: number;
@@ -714,6 +736,7 @@ function LiquidMetricPanel({
   latencyMaxMs: number;
   loss: number | null;
   hasHomepagePingBinding: boolean;
+  showPingMetrics: boolean;
 }) {
   const upLimit = getTrafficRadarLimit(upRate);
   const downLimit = getTrafficRadarLimit(downRate);
@@ -798,33 +821,37 @@ function LiquidMetricPanel({
         color="var(--ys-marquee-down, var(--status-success))"
         limitLabel={`上限 ${downLimit.label}`}
       />
-      <LiquidGauge
-        shape={settings.shape}
-        waveScale={waveScale}
-        motionMs={getLiquidMotionMs(latency != null ? (latency / safeLatencyMax) * 100 : 0, settings)}
-        icon={<Clock3 size={13} strokeWidth={2} />}
-        label="延迟"
-        valueText={latency != null ? String(Math.round(latency)) : hasHomepagePingBinding ? "—" : "未配"}
-        unit={latency != null ? "ms" : undefined}
-        fraction={latency != null ? latency / safeLatencyMax : 0}
-        color="var(--ys-metric-latency, var(--status-online))"
-        limitLabel={`${safeLatencyMax}ms`}
-        empty={latency == null}
-      />
-      <LiquidGauge
-        shape={settings.shape}
-        waveScale={waveScale}
-        motionMs={getLiquidMotionMs(loss != null ? loss : 0, settings)}
-        icon={<Unplug size={13} strokeWidth={2} />}
-        label="丢包"
-        valueText={loss != null ? loss.toFixed(1) : hasHomepagePingBinding ? "—" : "未配"}
-        unit={loss != null ? "%" : undefined}
-        fraction={loss != null ? loss / 100 : 0}
-        color="var(--ys-metric-loss, var(--status-offline))"
-        limitLabel="100%"
-        empty={loss == null}
-        warning={Boolean(loss && loss > 0)}
-      />
+      {showPingMetrics && (
+        <>
+          <LiquidGauge
+            shape={settings.shape}
+            waveScale={waveScale}
+            motionMs={getLiquidMotionMs(latency != null ? (latency / safeLatencyMax) * 100 : 0, settings)}
+            icon={<Clock3 size={13} strokeWidth={2} />}
+            label="延迟"
+            valueText={latency != null ? String(Math.round(latency)) : hasHomepagePingBinding ? "—" : "未配"}
+            unit={latency != null ? "ms" : undefined}
+            fraction={latency != null ? latency / safeLatencyMax : 0}
+            color="var(--ys-metric-latency, var(--status-online))"
+            limitLabel={`${safeLatencyMax}ms`}
+            empty={latency == null}
+          />
+          <LiquidGauge
+            shape={settings.shape}
+            waveScale={waveScale}
+            motionMs={getLiquidMotionMs(loss != null ? loss : 0, settings)}
+            icon={<Unplug size={13} strokeWidth={2} />}
+            label="丢包"
+            valueText={loss != null ? loss.toFixed(1) : hasHomepagePingBinding ? "—" : "未配"}
+            unit={loss != null ? "%" : undefined}
+            fraction={loss != null ? loss / 100 : 0}
+            color="var(--ys-metric-loss, var(--status-offline))"
+            limitLabel="100%"
+            empty={loss == null}
+            warning={Boolean(loss && loss > 0)}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -1297,6 +1324,7 @@ function RadarMetricPanel({
   latencyMaxMs,
   loss,
   hasHomepagePingBinding,
+  showPingMetrics,
 }: {
   variant: GaugeDashboardStyleId;
   settings: DashboardSettings;
@@ -1317,6 +1345,7 @@ function RadarMetricPanel({
   latencyMaxMs: number;
   loss: number | null;
   hasHomepagePingBinding: boolean;
+  showPingMetrics: boolean;
 }) {
   const upLimit = getTrafficRadarLimit(upRate);
   const downLimit = getTrafficRadarLimit(downRate);
@@ -1401,32 +1430,36 @@ function RadarMetricPanel({
         scanDelay={getRadarScanDelay(scanSeed, 5)}
         limitLabel={`上限 ${downLimit.label}`}
       />
-      <RadarGauge
-        variant={variant}
-        gaugeStyle={gaugeStyle}
-        icon={<Clock3 size={13} strokeWidth={2} />}
-        label="延迟"
-        valueText={latency != null ? String(Math.round(latency)) : hasHomepagePingBinding ? "—" : "未配"}
-        unit={latency != null ? "ms" : undefined}
-        fraction={latency != null ? latency / safeLatencyMax : 0}
-        color="var(--ys-metric-latency, var(--status-online))"
-        scanDelay={getRadarScanDelay(scanSeed, 6)}
-        limitLabel={`${safeLatencyMax}ms`}
-        empty={latency == null}
-      />
-      <RadarGauge
-        variant={variant}
-        gaugeStyle={gaugeStyle}
-        icon={<Unplug size={13} strokeWidth={2} />}
-        label="丢包"
-        valueText={loss != null ? loss.toFixed(1) : hasHomepagePingBinding ? "—" : "未配"}
-        unit={loss != null ? "%" : undefined}
-        fraction={loss != null ? loss / 100 : 0}
-        color="var(--ys-metric-loss, var(--status-offline))"
-        scanDelay={getRadarScanDelay(scanSeed, 7)}
-        limitLabel="100%"
-        empty={loss == null}
-      />
+      {showPingMetrics && (
+        <>
+          <RadarGauge
+            variant={variant}
+            gaugeStyle={gaugeStyle}
+            icon={<Clock3 size={13} strokeWidth={2} />}
+            label="延迟"
+            valueText={latency != null ? String(Math.round(latency)) : hasHomepagePingBinding ? "—" : "未配"}
+            unit={latency != null ? "ms" : undefined}
+            fraction={latency != null ? latency / safeLatencyMax : 0}
+            color="var(--ys-metric-latency, var(--status-online))"
+            scanDelay={getRadarScanDelay(scanSeed, 6)}
+            limitLabel={`${safeLatencyMax}ms`}
+            empty={latency == null}
+          />
+          <RadarGauge
+            variant={variant}
+            gaugeStyle={gaugeStyle}
+            icon={<Unplug size={13} strokeWidth={2} />}
+            label="丢包"
+            valueText={loss != null ? loss.toFixed(1) : hasHomepagePingBinding ? "—" : "未配"}
+            unit={loss != null ? "%" : undefined}
+            fraction={loss != null ? loss / 100 : 0}
+            color="var(--ys-metric-loss, var(--status-offline))"
+            scanDelay={getRadarScanDelay(scanSeed, 7)}
+            limitLabel="100%"
+            empty={loss == null}
+          />
+        </>
+      )}
     </div>
   );
 }

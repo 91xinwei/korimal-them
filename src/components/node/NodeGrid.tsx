@@ -7,6 +7,10 @@ import { serializeVisualStyleSettings, useVisualStyle } from "@/hooks/useVisualS
 import { getSnapshot } from "@/services/wsStore";
 import { normalizeHomepageNodeOrder } from "@/utils/nodeOrder";
 import {
+  hasHomepagePingBindings,
+  normalizeHomepagePingDisplayMode,
+} from "@/utils/pingDisplay";
+import {
   isRealtimeNodeSortMode,
   serializeHomepageNodeSortSettings,
   sortHomepageNodes,
@@ -20,6 +24,14 @@ export function NodeGrid() {
   const { data: config } = usePublicConfig();
   const { nodeSort } = useNodeSort();
   const { visualStyle } = useVisualStyle();
+  const pingDisplayMode = useMemo(
+    () => normalizeHomepagePingDisplayMode(config?.theme_settings?.homepagePingDisplayMode),
+    [config?.theme_settings?.homepagePingDisplayMode],
+  );
+  const hasAnyHomepagePingBinding = useMemo(
+    () => hasHomepagePingBindings(config?.theme_settings?.homepagePingBindings),
+    [config?.theme_settings?.homepagePingBindings],
+  );
   const customOrder = useMemo(
     () => normalizeHomepageNodeOrder(config?.theme_settings?.homepageNodeOrder),
     [config?.theme_settings?.homepageNodeOrder],
@@ -131,6 +143,8 @@ export function NodeGrid() {
               visualRedrawKey={visualRedrawKey}
               dashboardStyle={visualStyle.dashboardStyle}
               showTrafficQuota={visualStyle.showTrafficQuota}
+              pingDisplayMode={pingDisplayMode}
+              hasAnyHomepagePingBinding={hasAnyHomepagePingBinding}
               dashboardSettings={visualStyle.dashboardSettings}
               radarLatencyMaxMs={visualStyle.radarLatencyMaxMs}
               marqueeStyle={visualStyle.marqueeStyle}

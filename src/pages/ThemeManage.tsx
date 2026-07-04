@@ -101,6 +101,12 @@ import {
   type HomepagePingTaskBindings,
 } from "@/utils/pingTasks";
 import {
+  DEFAULT_HOMEPAGE_PING_DISPLAY_MODE,
+  HOMEPAGE_PING_DISPLAY_MODE_OPTIONS,
+  normalizeHomepagePingDisplayMode,
+  type HomepagePingDisplayMode,
+} from "@/utils/pingDisplay";
+import {
   applyHomepageNodeOrder,
   normalizeHomepageNodeOrder,
   pruneHomepageNodeOrder,
@@ -153,6 +159,8 @@ export function ThemeManage() {
   const [draftVisualStyle, setDraftVisualStyle] =
     useState<VisualStyleSettings>(DEFAULT_VISUAL_STYLE_SETTINGS);
   const [draftBindings, setDraftBindings] = useState<HomepagePingTaskBindings>({});
+  const [draftPingDisplayMode, setDraftPingDisplayMode] =
+    useState<HomepagePingDisplayMode>(DEFAULT_HOMEPAGE_PING_DISPLAY_MODE);
   const [draftNodeOrder, setDraftNodeOrder] = useState<string[]>([]);
   const [draftNodeSort, setDraftNodeSort] =
     useState<HomepageNodeSortSettings>(DEFAULT_HOMEPAGE_NODE_SORT);
@@ -239,6 +247,10 @@ export function ThemeManage() {
     () => normalizeHomepagePingTaskBindings(config?.theme_settings?.homepagePingBindings),
     [config?.theme_settings?.homepagePingBindings],
   );
+  const sourcePingDisplayMode = useMemo(
+    () => normalizeHomepagePingDisplayMode(config?.theme_settings?.homepagePingDisplayMode),
+    [config?.theme_settings?.homepagePingDisplayMode],
+  );
   const sourceNodeOrder = useMemo(
     () => normalizeHomepageNodeOrder(config?.theme_settings?.homepageNodeOrder),
     [config?.theme_settings?.homepageNodeOrder],
@@ -255,6 +267,7 @@ export function ThemeManage() {
     setDraftGradientBackground(sourceGradientBackground);
     setDraftVisualStyle(sourceVisualStyle);
     setDraftBindings(sourceBindings);
+    setDraftPingDisplayMode(sourcePingDisplayMode);
     setDraftNodeOrder(sourceNodeOrder);
     setDraftNodeSort(sourceNodeSort);
   }, [
@@ -264,6 +277,7 @@ export function ThemeManage() {
     sourceGradientBackground,
     sourceVisualStyle,
     sourceBindings,
+    sourcePingDisplayMode,
     sourceNodeOrder,
     sourceNodeSort,
   ]);
@@ -408,6 +422,7 @@ export function ThemeManage() {
     draftVisualStyleSerialized !== sourceVisualStyleSerialized ||
     draftNodeOrderSerialized !== sourceNodeOrderSerialized ||
     draftNodeSortSerialized !== sourceNodeSortSerialized ||
+    draftPingDisplayMode !== sourcePingDisplayMode ||
     draftBindingsSerialized !== sourceBindingsSerialized;
 
   const assignedNodeCount = useMemo(
@@ -636,6 +651,7 @@ export function ThemeManage() {
         gradientBackground: nextGradientBackground,
         visualStyle: nextVisualStyle,
         homepagePingBindings: nextBindings,
+        homepagePingDisplayMode: draftPingDisplayMode,
         homepageNodeSort: normalizeHomepageNodeSortSettings(draftNodeSort),
       };
       const nextNodeOrder = hasClientList
@@ -677,6 +693,7 @@ export function ThemeManage() {
     setDraftGradientBackground(sourceGradientBackground);
     setDraftVisualStyle(sourceVisualStyle);
     setDraftBindings(sourceBindings);
+    setDraftPingDisplayMode(sourcePingDisplayMode);
     setDraftNodeOrder(sourceNodeOrder);
     setDraftNodeSort(sourceNodeSort);
     setDraggingNodeUuid(null);
@@ -2186,7 +2203,7 @@ export function ThemeManage() {
         title="主页延迟检测"
         description={
           <>
-            为首页延迟卡片指定对应的 Ping 任务与展示节点。每个节点只能归属一个任务；未分配的节点不会显示延迟。
+            为首页延迟卡片指定对应的 Ping 任务与展示节点，并选择未配置节点的首页展示策略。每个节点只能归属一个任务。
             {" "}
             如果当前还没有可用任务，请先前往
             {" "}
@@ -2204,6 +2221,37 @@ export function ThemeManage() {
         }
       >
         <div className="flex flex-col gap-4">
+          <div className="surface-inset px-3 py-3">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="text-[12px] font-semibold text-[var(--text-secondary)]">
+                未配置 Ping 时
+              </div>
+              <div className="text-[11px] text-[var(--text-tertiary)]">
+                首页延迟/丢包展示策略
+              </div>
+            </div>
+            <div className="instance-segmented is-scrollable">
+              {HOMEPAGE_PING_DISPLAY_MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-active={draftPingDisplayMode === option.value ? "true" : "false"}
+                  onClick={() => {
+                    setDraftPingDisplayMode(option.value);
+                    setMessage(null);
+                  }}
+                  className="flex min-w-[160px] flex-col items-start justify-center gap-1 text-left"
+                  title={option.description}
+                >
+                  <span>{option.label}</span>
+                  <span className="text-[10px] font-normal text-[var(--text-tertiary)]">
+                    {option.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
             <label className="surface-inset flex items-center gap-2 px-3 py-2">
               <Search size={14} className="text-[var(--text-tertiary)]" />
