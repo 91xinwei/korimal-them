@@ -3,9 +3,12 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { useVisibleNodes } from "@/hooks/useNode";
 import {
   DEFAULT_TOP_INFO_ORDER,
+  DEFAULT_TOP_INFO_PROGRESS_SETTINGS,
   DEFAULT_TOP_INFO_SETTINGS,
   type TopInfoColumnCount,
   type TopInfoItemId,
+  type TopInfoProgressItemId,
+  type TopInfoProgressSettings,
   type TopInfoSettings,
 } from "@/hooks/useVisualStyle";
 import { formatBytes, formatTrafficRateLabel } from "@/utils/format";
@@ -38,12 +41,14 @@ function formatCores(value: number) {
 
 interface StatusOverviewProps {
   topInfo?: TopInfoSettings;
+  topInfoProgress?: TopInfoProgressSettings;
   topInfoOrder?: TopInfoItemId[];
   topInfoColumns?: TopInfoColumnCount;
 }
 
 export function StatusOverview({
   topInfo = DEFAULT_TOP_INFO_SETTINGS,
+  topInfoProgress = DEFAULT_TOP_INFO_PROGRESS_SETTINGS,
   topInfoOrder = DEFAULT_TOP_INFO_ORDER,
   topInfoColumns = 0,
 }: StatusOverviewProps) {
@@ -245,10 +250,16 @@ export function StatusOverview({
       {visibleItems.map((item, index) => (
         <OverviewItem
           key={item.id}
+          id={item.id}
           label={item.label}
           value={item.value}
           detail={item.detail}
           progress={item.progress}
+          showProgress={getTopInfoProgressVisibility(
+            item.id,
+            item.progress,
+            topInfoProgress,
+          )}
           tone={item.tone}
           order={index}
         />
@@ -258,26 +269,31 @@ export function StatusOverview({
 }
 
 function OverviewItem({
+  id,
   label,
   value,
   detail,
   progress,
+  showProgress,
   tone,
   order,
 }: {
+  id: TopInfoItemId;
   label: string;
   value: string | ReactNode;
   detail?: string;
   progress?: number;
+  showProgress: boolean;
   tone?: "cpu" | "memory" | "disk";
   order: number;
 }) {
-  const hasProgress = typeof progress === "number";
+  const hasProgress = showProgress && typeof progress === "number";
   const safeProgress = hasProgress ? clampPercent(progress) : 0;
 
   return (
     <div
       className="status-overview-item"
+      data-id={id}
       data-tone={tone}
       style={{ order } satisfies CSSProperties}
     >
@@ -296,4 +312,17 @@ function OverviewItem({
       )}
     </div>
   );
+}
+
+function isTopInfoProgressItem(id: TopInfoItemId): id is TopInfoProgressItemId {
+  return id === "online" || id === "cpu" || id === "memory" || id === "disk";
+}
+
+function getTopInfoProgressVisibility(
+  id: TopInfoItemId,
+  progress: number | undefined,
+  settings: TopInfoProgressSettings,
+) {
+  if (typeof progress !== "number") return false;
+  return isTopInfoProgressItem(id) ? settings[id] !== false : true;
 }

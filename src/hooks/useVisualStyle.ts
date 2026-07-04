@@ -71,6 +71,10 @@ export type TopInfoItemId =
   | "cpu"
   | "memory"
   | "disk";
+export type TopInfoProgressItemId = Extract<
+  TopInfoItemId,
+  "online" | "cpu" | "memory" | "disk"
+>;
 export type TopInfoColumnCount = 0 | 2 | 3 | 4 | 5 | 6;
 export type VisualStyleSource = "local" | "global" | "default";
 
@@ -138,6 +142,7 @@ export interface DashboardSettings {
 }
 
 export type TopInfoSettings = Record<TopInfoItemId, boolean>;
+export type TopInfoProgressSettings = Record<TopInfoProgressItemId, boolean>;
 
 export interface VisualStyleSettings {
   cardStyle: CardStylePresetId;
@@ -145,6 +150,7 @@ export interface VisualStyleSettings {
   dashboardStyle: DashboardStylePresetId;
   showTrafficQuota: boolean;
   topInfo: TopInfoSettings;
+  topInfoProgress: TopInfoProgressSettings;
   topInfoOrder: TopInfoItemId[];
   topInfoColumns: TopInfoColumnCount;
   dashboardSettings: DashboardSettings;
@@ -269,6 +275,19 @@ export const DEFAULT_TOP_INFO_SETTINGS: TopInfoSettings =
     settings[option.id] = true;
     return settings;
   }, {} as TopInfoSettings);
+
+export const TOP_INFO_PROGRESS_ITEM_IDS: TopInfoProgressItemId[] = [
+  "online",
+  "cpu",
+  "memory",
+  "disk",
+];
+
+export const DEFAULT_TOP_INFO_PROGRESS_SETTINGS: TopInfoProgressSettings =
+  TOP_INFO_PROGRESS_ITEM_IDS.reduce((settings, id) => {
+    settings[id] = true;
+    return settings;
+  }, {} as TopInfoProgressSettings);
 
 export const DEFAULT_TOP_INFO_ORDER: TopInfoItemId[] = TOP_INFO_ITEM_OPTIONS.map(
   (option) => option.id,
@@ -877,6 +896,7 @@ export const DEFAULT_VISUAL_STYLE_SETTINGS: VisualStyleSettings = {
   dashboardStyle: "bars",
   showTrafficQuota: true,
   topInfo: DEFAULT_TOP_INFO_SETTINGS,
+  topInfoProgress: DEFAULT_TOP_INFO_PROGRESS_SETTINGS,
   topInfoOrder: DEFAULT_TOP_INFO_ORDER,
   topInfoColumns: 0,
   dashboardSettings: DEFAULT_DASHBOARD_SETTINGS,
@@ -1162,6 +1182,19 @@ function normalizeTopInfoSettings(value: unknown): TopInfoSettings {
   }, {} as TopInfoSettings);
 }
 
+function normalizeTopInfoProgressSettings(value: unknown): TopInfoProgressSettings {
+  const record = isSettingsObject(value)
+    ? (value as Partial<Record<TopInfoProgressItemId, unknown>>)
+    : {};
+
+  return TOP_INFO_PROGRESS_ITEM_IDS.reduce((settings, id) => {
+    const raw = record[id];
+    settings[id] =
+      typeof raw === "boolean" ? raw : DEFAULT_TOP_INFO_PROGRESS_SETTINGS[id];
+    return settings;
+  }, {} as TopInfoProgressSettings);
+}
+
 function isTopInfoItem(value: unknown): value is TopInfoItemId {
   return (
     typeof value === "string" &&
@@ -1224,6 +1257,7 @@ export function normalizeVisualStyleSettings(value: unknown): VisualStyleSetting
         ? record.showTrafficQuota
         : DEFAULT_VISUAL_STYLE_SETTINGS.showTrafficQuota,
     topInfo: normalizeTopInfoSettings(record.topInfo),
+    topInfoProgress: normalizeTopInfoProgressSettings(record.topInfoProgress),
     topInfoOrder: normalizeTopInfoOrder(record.topInfoOrder),
     topInfoColumns: normalizeTopInfoColumns(record.topInfoColumns),
     dashboardSettings: normalizeDashboardSettings(record.dashboardSettings),

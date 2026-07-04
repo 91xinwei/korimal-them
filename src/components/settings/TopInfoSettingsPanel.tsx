@@ -1,21 +1,25 @@
 import { useMemo, useState, type DragEvent } from "react";
-import { Eye, EyeOff, GripVertical } from "lucide-react";
+import { Eye, EyeOff, GripVertical, Percent } from "lucide-react";
 import {
   TOP_INFO_COLUMN_OPTIONS,
   TOP_INFO_ITEM_OPTIONS,
+  TOP_INFO_PROGRESS_ITEM_IDS,
   type TopInfoColumnCount,
   type TopInfoItemId,
+  type TopInfoProgressItemId,
+  type TopInfoProgressSettings,
   type TopInfoSettings,
   type VisualStyleSettings,
 } from "@/hooks/useVisualStyle";
 
 type TopInfoPatch = Pick<
   VisualStyleSettings,
-  "topInfo" | "topInfoOrder" | "topInfoColumns"
+  "topInfo" | "topInfoProgress" | "topInfoOrder" | "topInfoColumns"
 >;
 
 interface TopInfoSettingsPanelProps {
   settings: TopInfoSettings;
+  progress: TopInfoProgressSettings;
   order: TopInfoItemId[];
   columns: TopInfoColumnCount;
   onChange: (patch: Partial<TopInfoPatch>) => void;
@@ -24,6 +28,7 @@ interface TopInfoSettingsPanelProps {
 
 export function TopInfoSettingsPanel({
   settings,
+  progress,
   order,
   columns,
   onChange,
@@ -61,6 +66,18 @@ export function TopInfoSettingsPanel({
       topInfo: {
         ...settings,
         [id]: !settings[id],
+      },
+    });
+  };
+
+  const isProgressItem = (id: TopInfoItemId): id is TopInfoProgressItemId =>
+    TOP_INFO_PROGRESS_ITEM_IDS.includes(id as TopInfoProgressItemId);
+
+  const toggleProgress = (id: TopInfoProgressItemId) => {
+    onChange({
+      topInfoProgress: {
+        ...progress,
+        [id]: !progress[id],
       },
     });
   };
@@ -146,6 +163,8 @@ export function TopInfoSettingsPanel({
       >
         {orderedOptions.map((option) => {
           const enabled = settings[option.id];
+          const progressId = isProgressItem(option.id) ? option.id : null;
+          const progressEnabled = progressId ? progress[progressId] : false;
 
           return (
             <div
@@ -180,6 +199,20 @@ export function TopInfoSettingsPanel({
                   {enabled ? <Eye size={14} /> : <EyeOff size={14} />}
                 </span>
               </button>
+              {progressId && (
+                <button
+                  type="button"
+                  className="top-info-progress-toggle"
+                  data-active={progressEnabled ? "true" : "false"}
+                  onClick={() => toggleProgress(progressId)}
+                  disabled={!enabled}
+                  title={progressEnabled ? "隐藏百分比条" : "显示百分比条"}
+                  aria-pressed={progressEnabled}
+                >
+                  <Percent size={13} />
+                  <span>{progressEnabled ? "百分比条" : "已隐藏"}</span>
+                </button>
+              )}
             </div>
           );
         })}

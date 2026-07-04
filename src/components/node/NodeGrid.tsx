@@ -120,6 +120,7 @@ export function NodeGrid() {
     <div className="flex flex-col gap-4 xl:gap-5">
       <StatusOverview
         topInfo={visualStyle.topInfo}
+        topInfoProgress={visualStyle.topInfoProgress}
         topInfoOrder={visualStyle.topInfoOrder}
         topInfoColumns={visualStyle.topInfoColumns}
       />

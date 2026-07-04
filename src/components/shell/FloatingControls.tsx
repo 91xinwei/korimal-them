@@ -1007,6 +1007,7 @@ export function FloatingControls() {
                 <div className="visual-style-section-title">顶部信息</div>
                 <TopInfoSettingsPanel
                   settings={visualStyle.topInfo}
+                  progress={visualStyle.topInfoProgress}
                   order={visualStyle.topInfoOrder}
                   columns={visualStyle.topInfoColumns}
                   onChange={updateVisualStyle}

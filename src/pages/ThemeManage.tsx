@@ -1249,6 +1249,7 @@ export function ThemeManage() {
               </div>
               <TopInfoSettingsPanel
                 settings={draftVisualStyle.topInfo}
+                progress={draftVisualStyle.topInfoProgress}
                 order={draftVisualStyle.topInfoOrder}
                 columns={draftVisualStyle.topInfoColumns}
                 onChange={updateDraftVisualStyle}
