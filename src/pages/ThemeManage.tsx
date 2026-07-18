@@ -96,6 +96,7 @@ import {
 } from "@/hooks/useVisualStyle";
 import { MarqueePreviewStrip } from "@/components/node/MarqueePreviewStrip";
 import { TopInfoSettingsPanel } from "@/components/settings/TopInfoSettingsPanel";
+import { HomeModulesSettingsPanel } from "@/components/settings/HomeModulesSettingsPanel";
 import {
   normalizeHomepagePingTaskBindings,
   type HomepagePingTaskBindings,
@@ -1240,6 +1241,17 @@ export function ThemeManage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="surface-inset p-4">
+              <div className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-[var(--text-primary)]">
+                <LayoutTemplate size={14} />
+                <span>首页模块</span>
+              </div>
+              <HomeModulesSettingsPanel
+                settings={draftVisualStyle.homeModules}
+                onChange={(homeModules) => updateDraftVisualStyle({ homeModules })}
+              />
             </div>
 
             <div className="surface-inset p-4">

@@ -77,6 +77,7 @@ export type TopInfoProgressItemId = Extract<
 >;
 export type TopInfoSplitItemId = Extract<TopInfoItemId, "traffic" | "rate">;
 export type TopInfoColumnCount = 0 | 2 | 3 | 4 | 5 | 6;
+export type HomeMapMode = "globe" | "map";
 export type VisualStyleSource = "local" | "global" | "default";
 
 export interface VisualMetricColors {
@@ -146,6 +147,13 @@ export type TopInfoSettings = Record<TopInfoItemId, boolean>;
 export type TopInfoProgressSettings = Record<TopInfoProgressItemId, boolean>;
 export type TopInfoSplitSettings = Record<TopInfoSplitItemId, boolean>;
 
+export interface HomeModuleSettings {
+  visitorInfo: boolean;
+  explorerToolbar: boolean;
+  mapEnabled: boolean;
+  mapMode: HomeMapMode;
+}
+
 export interface VisualStyleSettings {
   cardStyle: CardStylePresetId;
   cardLayout: CardLayoutId;
@@ -156,6 +164,7 @@ export interface VisualStyleSettings {
   topInfoSplit: TopInfoSplitSettings;
   topInfoOrder: TopInfoItemId[];
   topInfoColumns: TopInfoColumnCount;
+  homeModules: HomeModuleSettings;
   dashboardSettings: DashboardSettings;
   radarLatencyMaxMs: number;
   marqueePalette: MarqueePalettePresetId;
@@ -911,6 +920,12 @@ export const DEFAULT_VISUAL_STYLE_SETTINGS: VisualStyleSettings = {
   topInfoSplit: DEFAULT_TOP_INFO_SPLIT_SETTINGS,
   topInfoOrder: DEFAULT_TOP_INFO_ORDER,
   topInfoColumns: 0,
+  homeModules: {
+    visitorInfo: true,
+    explorerToolbar: true,
+    mapEnabled: false,
+    mapMode: "globe",
+  },
   dashboardSettings: DEFAULT_DASHBOARD_SETTINGS,
   radarLatencyMaxMs: 1000,
   marqueePalette: "health",
@@ -1253,6 +1268,33 @@ function normalizeTopInfoColumns(value: unknown): TopInfoColumnCount {
     : DEFAULT_VISUAL_STYLE_SETTINGS.topInfoColumns;
 }
 
+function normalizeHomeModules(value: unknown): HomeModuleSettings {
+  const fallback = DEFAULT_VISUAL_STYLE_SETTINGS.homeModules;
+  const record = isSettingsObject(value)
+    ? (value as Partial<Record<keyof HomeModuleSettings | "healthSummary", unknown>>)
+    : {};
+  return {
+    visitorInfo:
+      typeof record.visitorInfo === "boolean"
+        ? record.visitorInfo
+        : fallback.visitorInfo,
+    explorerToolbar:
+      typeof record.explorerToolbar === "boolean"
+        ? record.explorerToolbar
+        : typeof record.healthSummary === "boolean"
+          ? record.healthSummary
+          : fallback.explorerToolbar,
+    mapEnabled:
+      typeof record.mapEnabled === "boolean"
+        ? record.mapEnabled
+        : fallback.mapEnabled,
+    mapMode:
+      record.mapMode === "map" || record.mapMode === "globe"
+        ? record.mapMode
+        : fallback.mapMode,
+  };
+}
+
 export function normalizeVisualStyleSettings(value: unknown): VisualStyleSettings {
   if (!isSettingsObject(value)) return DEFAULT_VISUAL_STYLE_SETTINGS;
   const record = value as Record<string, unknown>;
@@ -1286,6 +1328,7 @@ export function normalizeVisualStyleSettings(value: unknown): VisualStyleSetting
     topInfoSplit: normalizeTopInfoSplitSettings(record.topInfoSplit),
     topInfoOrder: normalizeTopInfoOrder(record.topInfoOrder),
     topInfoColumns: normalizeTopInfoColumns(record.topInfoColumns),
+    homeModules: normalizeHomeModules(record.homeModules),
     dashboardSettings: normalizeDashboardSettings(record.dashboardSettings),
     radarLatencyMaxMs: normalizeRadarLatencyMaxMs(record.radarLatencyMaxMs),
     marqueePalette,

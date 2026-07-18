@@ -469,6 +469,10 @@ function getPingSnapshot(uuid: string) {
   return pingOverviewState.items.get(uuid)?.item ?? EMPTY_PING;
 }
 
+export function getPingMiniSnapshot(uuid: string) {
+  return getPingSnapshot(uuid);
+}
+
 function usePingOverviewScheduler(visibleUuids: string[]) {
   const { data: config } = usePublicConfig();
   const bindings = useMemo(

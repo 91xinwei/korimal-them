@@ -14,6 +14,9 @@
 - 卡片外壳、背板玻璃、信息展板、跑马灯、配色预设。
 - 顶部信息支持显示开关、拖拽排序、每行数量、百分比条开关，以及总上下行流量/总流量速率拆开显示。
 - 首页 Ping 支持未配置时自动隐藏、显示占位、仅绑定节点显示。
+- 首页支持搜索、分组、快捷筛选、访客信息弹窗和真实交互地球。
+- 首页运维工具包含健康摘要、异常集中、节点拓扑、共同故障分析和 JSON/CSV 快照导出。
+- 负载/Ping 历史优先使用 Metric Store，新接口不可用时自动回退旧 records。
 - 管理员主题设置页 `?view=theme-manage`，负责保存全站默认配置。
 
 ## 运行入口
@@ -59,12 +62,21 @@ src/
 | `src/components/shell/BackgroundBoard.tsx` | 图片背景板和渐变背板实际渲染 | 背景层级、透明度、背板玻璃 CSS 变量从这里查 |
 | `src/components/node/NodeGrid.tsx` | 首页节点列表、排序、卡片布局入口 | 新增排序模式时配合 `utils/nodeSort.ts` |
 | `src/components/node/StatusOverview.tsx` | 首页顶部信息总览，渲染时间、数量、流量、速率、资源汇总 | 改顶部信息显示、拆分、进度条时从这里进 |
+| `src/components/node/HomeExplorerToolbar.tsx` | 首页搜索、分组、快捷筛选、运维工具入口和访客信息容器 | 新增首页筛选或工具入口时从这里进 |
+| `src/components/node/HealthSummaryPanel.tsx` | 健康摘要、历史峰值和异常集中 | 阈值、历史范围和风险列表从这里改 |
+| `src/components/node/NodeTopologyPanel.tsx` | 分组拓扑、上下游标签和共同故障分析 | 上游标签语法和共同故障规则从这里改 |
+| `src/components/node/SnapshotExportPanel.tsx` | 当前筛选节点的 JSON/CSV 导出 UI | 导出字段与安全处理主要在 `services/snapshot.ts` |
+| `src/components/node/NodeGeoPanel.tsx` | 按需加载的 WebGL 交互地球、昼夜纹理、地区节点与图例 | 地球外观、交互、节点聚合、暂停和销毁逻辑从这里改 |
+| `src/components/node/VisitorInfo.tsx` | 第三方 IP 信息源自动回退和顶层访客弹窗 | 信息源、超时、自动弹出、ISP/ASN/Organization normalize 从这里改 |
 | `src/components/node/NodeCard.tsx` | 节点卡片主体渲染 | 尽量只放组件结构，绘制工具放 `dashboardHelpers.tsx` |
 | `src/components/node/CanvasStrip.tsx` | 数据条/跑马灯/趋势条的 Canvas 基础组件 | 已使用共享 ResizeObserver/IntersectionObserver，新增动画不要再为每条数据创建独立全局监听 |
 | `src/components/node/dashboardHelpers.tsx` | 弧光/全环/指针/液位展板的数学、SVG、CSS 变量工具 | 新增仪表盘形态或样式优先放这里 |
 | `src/components/node/marqueeStyle.ts` | 跑马灯 canvas 绘制和动画节奏 | 新增跑马灯样式从这里进 |
 | `src/components/settings/TopInfoSettingsPanel.tsx` | 顶部信息设置面板，含显示、百分比条、拆开显示、拖拽排序、每行数量 | 新增顶部信息控制项时同步这里和 `useVisualStyle.ts` |
 | `src/hooks/useVisualStyle.ts` | 卡片外壳、展板、跑马灯、配色的类型、默认值、normalize、本地状态 | 新增视觉配置字段必须先补这里 |
+| `src/services/metrics.ts` | Metric Store 定义、查询、Ping 统计、旧图表数据转换和健康汇总 | 新版 Metric 接口适配集中在这里，不要散到组件 |
+| `src/services/snapshot.ts` | JSON/CSV 快照组装、CSV 注入防护和下载 | 新增导出字段时保持公开可见范围和转义规则 |
+| `src/utils/region.ts` | 地区代码、旗帜解析、地图坐标和中文名称 | 新增地区别名或坐标时从这里改 |
 | `src/hooks/useGradientBackground.ts` | 渐变背板配置、本地/全局来源、CSS 变量设置 | 渐变预设和保存策略从这里改 |
 | `src/hooks/usePingMini.ts` | 首页 Ping mini 汇总 store、定时刷新、按节点订阅 | 首页 Ping 显示策略和绑定数据流改动要注意请求数量 |
 | `src/utils/backgroundSettings.ts` | 图片背景板配置 normalize、URL 解析、上传图来源 | 背景配置字段必须和这里保持一致 |
@@ -87,6 +99,8 @@ src/
 5. `StatusOverview` 用可见节点聚合顶部信息，并按 `topInfoOrder`、`topInfoColumns`、`topInfoSplit` 渲染。
 6. `NodeGrid` 调用 `useHomepagePingOverviewForNodes(uuids)` 调度首页 Ping mini，复用当前排序后的节点列表。
 7. 每张 `NodeCard` 自己读取实时节点、Ping mini 数据、流量趋势并渲染；浅色/深色状态由 `NodeGrid` 统一传入，避免每张卡重复订阅外观。
+8. `NodeGrid` 在排序前应用搜索、分组和快捷筛选，地图、顶部总览、Ping 调度、运维工具和快照导出共同复用筛选结果。
+9. 交互地球和三个运维面板使用 `React.lazy()`；只有开启地球或点击工具后才下载对应 chunk，地球的 Three.js / globe.gl 还会在组件内部再次动态导入。
 
 主题设置保存大致是：
 
@@ -121,6 +135,17 @@ src/
 | `getPingOverview(hours, taskId?)` | RPC `common:getRecords`，有 taskId 时可回退 `/api/records/ping` | 首页 Ping mini 汇总 |
 | `saveThemeSettings(theme, settings)` | `POST /api/admin/theme/settings?theme=...` | 保存全站主题默认配置 |
 
+Metric Store 集中在 `src/services/metrics.ts`：
+
+| RPC 方法 | 用途 | 回退策略 |
+| --- | --- | --- |
+| `public:listMetricDefinitions` | 检测当前核心支持的指标 | 方法不存在时回到旧 records |
+| `public:queryMetrics` | 负载、Ping 序列和健康历史峰值 | `api.ts` 继续调用原有 RPC / REST records |
+| `public:getPingMetricStats` | Ping 延迟、丢包和波动统计 | 首页/详情继续使用旧 Ping records |
+| `public:getPublicPingTasks` | 补齐 Metric Ping 任务信息 | 旧路径继续使用 `/api/task/ping` 或 records tasks |
+
+采样上限：详情历史 720 点、健康摘要 240 点、首页 Ping 120 点。不要把首页和健康摘要恢复成详情图采样量。
+
 RPC2 位置：`src/services/rpc2Client.ts`。默认先尝试 WebSocket `/api/rpc2`，失败后走 HTTP POST `/api/rpc2`。
 
 ## 主题配置字段
@@ -134,10 +159,16 @@ interface ThemeSettings {
   defaultAppearance?: "system" | "light" | "dark";
   background?: ThemeBackgroundSettings;
   gradientBackground?: unknown;
-  visualStyle?: unknown;
   homepagePingBindings?: Record<string, string[]>;
   homepageNodeOrder?: string[];
   homepageNodeSort?: unknown;
+  visualStyle?: {
+    homeModules?: {
+      visitorInfo?: boolean;
+      mapEnabled?: boolean;
+      mapMode?: "globe" | "map"; // 兼容旧配置；当前统一渲染交互地球
+    };
+  };
   showPingChart?: boolean;
   enableAdminButton?: boolean;
 }
@@ -177,6 +208,7 @@ interface ThemeSettings {
 - `topInfoSplit`：顶部信息拆开显示开关，目前只作用于总上下行流量和总流量速率；开启后分别渲染上传/下载、上行/下行独立卡片。
 - `topInfoOrder`：顶部信息拖拽排序结果，保存原始项目 ID，不保存拆分后的派生 ID。
 - `topInfoColumns`：顶部信息每行数量，`0` 表示自动，固定值支持 2/3/4/5/6。
+- `homeModules`：首页独立模块设置，包含 `visitorInfo`、`explorerToolbar` 和交互地球开关。`mapMode` 仅为旧全站配置兼容字段，当前 `NodeGrid` 统一渲染 `NodeGeoPanel`。`explorerToolbar=false` 时会移除整块搜索/筛选/运维入口，并重置筛选和当前工具；normalize 会把旧 `healthSummary` 值迁移到该字段。
 
 首页快捷面板里的渐变背板入口放在“卡片与样式”页签内，和卡片外壳、信息展板、配色同级。背板玻璃也在“卡片外壳”页签里，但配置字段仍是 `gradientBackground.tintSurfaces` 和 `gradientBackground.surfaceOpacity`，因为它依赖当前渐变背板颜色给卡片、总览和部分色块染色。
 
@@ -214,7 +246,13 @@ interface ThemeSettings {
 - `NodeGrid` 统一读取 `resolvedAppearance` 并传给 `NodeCard`，避免大量节点时每张卡重复订阅 `usePreferences()`。
 - `usePreferences()` 不再手写额外 `/api/public` 请求，默认外观跟随 `usePublicConfig()`，避免首屏重复请求。
 - 首页 Ping mini 调度使用 `useHomepagePingOverviewForNodes(uuids)`，复用当前节点列表，避免额外全局订阅和重复过滤。
+- 地球和健康/拓扑/导出面板必须保持异步加载；地球默认关闭，不要把 `NodeGeoPanel`、Three.js 或 globe.gl 改回首屏静态导入。
+- 地球渲染必须保留 DPR 上限、`IntersectionObserver` / `visibilitychange` 暂停和 `_destructor()` 清理；新增视觉效果前先评估多节点页面与手机 GPU 成本。
+- `NodeGeoPanel` 使用地区标记签名过滤无关实时刷新，并跳过尺寸未变化的 `ResizeObserver` 通知；不要把 CPU、内存、流量等字段加入地球签名，否则会恢复高频 WebGL 数据同步。
+- 昼夜纹理固定为 2048×1024，适配地球最大约 930 设备像素的实际画布；不要直接换回 4K 纹理。若未来放大地球，先对比视觉收益、下载体积和纹理解码显存。
+- Metric Store 查询必须保留采样上限和定义检测，旧核心失败后立即回退，不要反复重试不存在的方法。
 - 构建时可用 Vite 输出观察入口包体积。`v1.2.9-p1` 中入口包约从 gzip `102 kB` 降到 gzip `79 kB`。
+- `v1.3.0-p6` 的入口 gzip 约 `82 kB`；Three.js 约 `190 kB gzip`、globe.gl 约 `381 kB gzip`，只在交互地球开启时下载。四张地球纹理合计约 `1.36 MB`，其中昼夜纹理合计约 `0.55 MB`。
 
 ## 常见开发入口
 
@@ -226,6 +264,10 @@ interface ThemeSettings {
 - 加跑马灯样式：改 `MarqueeShapeId`、`MARQUEE_STYLE_PRESETS`、`marqueeStyle.ts`。
 - 改背景板：图片源在 `backgroundSettings.ts` / `BackgroundBoard.tsx`，渐变在 `useGradientBackground.ts` / `FloatingControls.tsx`。
 - 改主题设置页：UI 在 `ThemeManage.tsx`，纯工具放 `src/pages/themeManage/`。
+- 改首页搜索/快捷筛选：入口在 `NodeGrid.tsx` 和 `HomeExplorerToolbar.tsx`，筛选结果必须继续复用到总览、地图、Ping 和导出。
+- 改健康摘要或 Metric Store：先看 `services/metrics.ts`，再看 `HealthSummaryPanel.tsx`；不要逐节点发送历史请求。
+- 改拓扑：规则在 `NodeTopologyPanel.tsx`，当前识别 `upstream:`、`parent:`、`上游:`、`入口:` 标签。
+- 改快照导出：字段和 CSV 安全在 `services/snapshot.ts`，UI 在 `SnapshotExportPanel.tsx`。
 
 ## 开发命令
 
@@ -253,6 +295,7 @@ npm run package
 4. `npm run lint`、`npx tsc -p tsconfig.app.json --noEmit --pretty false`、`npm audit --audit-level=high`、`npm run build` 通过。
 5. `npm run package` 生成新的 zip，不能覆盖旧 zip。
 6. 抽查 zip 内的 `komari-theme.json`，确认版本、作者、URL 正确。
+7. 抽查 zip 内包含 `THIRD_PARTY_NOTICES.md`；交互地球实现或资源来源变化时同步更新该文件。
 
 ## 维护注意事项
 

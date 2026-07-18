@@ -94,6 +94,7 @@ function emptyDisplay(info: NodeInfo, online: boolean | null): NodeDisplay {
     process: 0,
     connectionsTcp: 0,
     connectionsUdp: 0,
+    message: "",
     updatedAt: 0,
   };
 }
@@ -149,6 +150,7 @@ function mergeRealtime(
     process: rt.process ?? 0,
     connectionsTcp: rt.connections?.tcp ?? 0,
     connectionsUdp: rt.connections?.udp ?? 0,
+    message: rt.message ?? display.message,
     updatedAt: updatedAt > 0 ? updatedAt : display.updatedAt,
   };
 }
@@ -177,6 +179,7 @@ function shallowEqualDisplay(a: NodeDisplay, b: NodeDisplay) {
     a.process === b.process &&
     a.connectionsTcp === b.connectionsTcp &&
     a.connectionsUdp === b.connectionsUdp &&
+    a.message === b.message &&
     a.updatedAt === b.updatedAt
   );
 }
@@ -389,6 +392,7 @@ function normalizeRealtime(raw: unknown, fallback: NodeDisplay): NodeRealtime | 
       },
       uptime: asNumber(payload.uptime),
       process: asNumber(payload.process),
+      message: typeof payload.message === "string" ? payload.message : "",
       updated_at: (payload.updated_at ?? payload.time) as string | number | undefined,
     };
   }
@@ -424,6 +428,7 @@ function normalizeRealtime(raw: unknown, fallback: NodeDisplay): NodeRealtime | 
     },
     uptime: asNumber(payload.uptime),
     process: asNumber(payload.process),
+    message: typeof payload.message === "string" ? payload.message : "",
     updated_at: (payload.updated_at ?? payload.time) as string | number | undefined,
   };
 }

@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { getRpc2Client } from "@/services/rpc2Client";
 import {
+  loadMetricLoadRecords,
+  loadMetricPingOverview,
+  loadMetricPingRecords,
+} from "@/services/metrics";
+import {
   MeSchema,
   NodeInfoSchema,
   PublicConfigSchema,
@@ -336,6 +341,13 @@ export async function getLoadRecords(
   hours = 6,
 ): Promise<LoadRecordsResponse> {
   try {
+    const metricRecords = await loadMetricLoadRecords(uuid, hours);
+    if (metricRecords) return metricRecords;
+  } catch {
+    // Older Komari versions do not expose Metric Store RPC methods.
+  }
+
+  try {
     const maxCount = getRecordsMaxCount(hours, LOAD_RECORDS_PER_HOUR);
     const payload = await rpcCall(
       "common:getRecords",
@@ -364,6 +376,13 @@ export async function getPingRecords(
   hours = 6,
 ): Promise<PingRecordsResponse> {
   const safeHours = normalizeHistoryHours(hours);
+  try {
+    const metricRecords = await loadMetricPingRecords(uuid, safeHours);
+    if (metricRecords) return metricRecords;
+  } catch {
+    // Keep REST/RPC records as the compatibility path.
+  }
+
   try {
     return (await apiGet(
       `/api/records/ping?uuid=${encodeURIComponent(uuid)}&hours=${safeHours}`,
@@ -432,6 +451,13 @@ export async function getPingOverview(
   hours = 1,
   taskId?: number,
 ): Promise<PingOverviewResponse> {
+  try {
+    const metricOverview = await loadMetricPingOverview(hours, taskId);
+    if (metricOverview) return metricOverview;
+  } catch {
+    // Fall through to the legacy records endpoint.
+  }
+
   try {
     const payload = await rpcCall(
       "common:getRecords",

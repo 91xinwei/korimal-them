@@ -28,7 +28,21 @@ komari-theme-YS 是一个面向 [Komari](https://github.com/komari-monitor/komar
 - 首页顶部总览可显示当前时间、节点总数、在线数量、点亮地区、总上下行流量、总流量速率、总 CPU、总内存和总硬盘。
 - 顶部信息支持显示开关、拖拽排序和每行数量设置，可在首页快捷面板临时调整，也可由管理员保存为全站默认。
 - 节点卡片支持方型卡片和条形卡片两种形态：方型适合展示完整信息展板，条形适合大量节点和移动端快速浏览。
+- 首页支持名称、地区、系统、架构、分组、标签、备注、CPU 型号和探针消息搜索，并提供在线、离线、高负载、资源、流量、到期和 message 快捷筛选。
+- 搜索、分组、快捷筛选和运维工具所在的大框支持整体显示/隐藏；关闭时会清空当前筛选条件，避免节点继续被隐藏。
+- 可选显示访客网络弹窗：启用后每次进入或刷新首页都会自动出现，也可从首页按钮再次打开；支持显示公网 IP、地区、ISP、ASN 和 Organization，第三方信息源不可用时会自动切换备用源。
+- 可选启用真实交互地球：地球位于首页顶部下层，支持自动旋转、鼠标 / 触摸拖动、昼夜纹理、地区旗帜和状态脉冲；关闭时不会下载 Three.js、globe.gl 和地球纹理。
+- 交互地球只在地区、名称、数量或在线状态变化时同步标记；纹理按当前最大显示尺寸优化为 2K，并在离开视口、切换后台或启用系统“减少动态效果”时降低无意义渲染。
 - WebSocket 刷新策略参考官方主题，首页节点状态、流量速率和在线状态尽量兼顾实时性与稳定性。
+
+### 运维工具
+
+- 健康摘要集中展示离线、CPU、内存、硬盘、网络质量、流量额度、到期时间和探针 message 风险。
+- 健康摘要支持 24 小时、7 天和 30 天历史峰值；新版 Komari 使用 Metric Store，旧版核心自动回退到实时状态。
+- 健康摘要面板使用透明背板并跟随卡片外壳和渐变背板配色；关闭首页快捷筛选总开关后不会加载健康面板或请求健康历史。
+- 节点拓扑支持分组视图、`upstream:` / `上游:` 标签关系，以及同上游、同分组、同地区的共同故障判断。
+- 快照导出支持 JSON 和 CSV，并只导出当前搜索、分组和快捷筛选后的可见节点。
+- CSV 导出包含公式注入防护、标准引号/换行转义和 UTF-8 BOM。
 
 ### 卡片与信息展板
 
@@ -66,6 +80,7 @@ komari-theme-YS 是一个面向 [Komari](https://github.com/komari-monitor/komar
 
 - 节点详情页整合 Mochi 与 PurCarte 的一些优点，偏向高信息密度的状态展示。
 - 详情页支持负载历史和 Ping 历史时间范围选择，可按实时、1 小时、4 小时、1 天、7 天、30 天、300 天等范围查看。
+- 历史数据优先使用 `public:queryMetrics` 和 `public:getPingMetricStats`，接口不可用或无数据时自动回退旧 records RPC / REST。
 - 主题配置不走 `/admin/theme_managed` 的托管配置，而是通过 `?view=theme-manage` 提供前端配置页。
 - 项目内置 [AI 交接与维护说明](./docs/AI_HANDOFF.md)，整理了文件职责、Komari 接口、配置字段和发版检查项，方便后续维护。
 
@@ -85,6 +100,7 @@ komari-theme-YS 自带一个前端主题管理面板，入口不是后台菜单�
 - 配置首页延迟检测：为首页节点卡片绑定对应的 Ping 任务，支持一键绑定全部节点，并可设置未配置 Ping 时的展示策略。
 - 设置全站默认卡片形态、卡片外壳、背板玻璃、信息展板、数据条动态样式、液位容器、仪表细节、指标配色和跑马灯配色。
 - 设置顶部信息的显示项、拖拽顺序和每行数量。
+- 设置访客信息弹窗、首页快捷筛选整块和真实交互地球等首页独立模块。
 - 设置全站默认渐变背板和图片背景板。
 - 统一查看当前已绑定的首页 Ping 节点数量，并按任务筛选和搜索。
 - 在保存前预览当前配置状态，必要时一键重置本次修改。
@@ -101,6 +117,7 @@ komari-theme-YS 自带一个前端主题管理面板，入口不是后台菜单�
 - `dist/`
 - `komari-theme.json`
 - `preview.png`
+- `THIRD_PARTY_NOTICES.md`
 
 ## 开发
 
@@ -141,3 +158,4 @@ npm run package
 - [Komari API 文档](https://komari-document.pages.dev/dev/api.html)
 - [Komari RPC 文档](https://komari-document.pages.dev/dev/rpc.html)
 - [官方主题 komari-web](https://github.com/komari-monitor/komari-web)
+- [komari-theme-Glassmorphism](https://github.com/sanrokamlan-prog/komari-theme-Glassmorphism)（交互地球实现与资源参考，MIT）

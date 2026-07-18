@@ -1,4 +1,4 @@
-// Packages komari-theme-YS-vX.Y.Z.zip ready for `komari-theme.json` + `preview.png` + `dist/` drop-in.
+// Packages the Komari manifest, preview, notices, and built `dist/` into a versioned theme ZIP.
 // Uses Node's builtin zlib via a minimal zip stream (no external deps).
 
 import { createWriteStream, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -43,6 +43,7 @@ function walk(dir, base = dir) {
 const entries = [
   { path: "komari-theme.json", full: resolve(root, "komari-theme.json") },
   { path: "preview.png", full: resolve(root, "preview.png") },
+  { path: "THIRD_PARTY_NOTICES.md", full: resolve(root, "THIRD_PARTY_NOTICES.md") },
   ...walk(resolve(root, "dist"), root),
 ];
 

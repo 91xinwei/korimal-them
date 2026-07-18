@@ -48,6 +48,7 @@ import {
 } from "@/hooks/useVisualStyle";
 import { MarqueePreviewStrip } from "@/components/node/MarqueePreviewStrip";
 import { TopInfoSettingsPanel } from "@/components/settings/TopInfoSettingsPanel";
+import { HomeModulesSettingsPanel } from "@/components/settings/HomeModulesSettingsPanel";
 import {
   HOMEPAGE_NODE_SORT_OPTIONS,
   NODE_SORT_INTERVAL_OPTIONS,
@@ -76,6 +77,7 @@ const VISUAL_STYLE_QUICK_TABS = [
   { id: "gradient", label: "渐变背板" },
   { id: "palette", label: "配色" },
   { id: "topInfo", label: "顶部信息" },
+  { id: "modules", label: "首页模块" },
 ] as const;
 type VisualStyleQuickTab = (typeof VISUAL_STYLE_QUICK_TABS)[number]["id"];
 
@@ -1014,6 +1016,13 @@ export function FloatingControls() {
                   onChange={updateVisualStyle}
                 />
               </div>
+            )}
+
+            {visualStyleTab === "modules" && (
+              <HomeModulesSettingsPanel
+                settings={visualStyle.homeModules}
+                onChange={(homeModules) => updateVisualStyle({ homeModules })}
+              />
             )}
           </div>
         )}

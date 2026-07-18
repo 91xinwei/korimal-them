@@ -22,6 +22,7 @@ import {
   RefreshCw,
   ExternalLink,
   Power,
+  AlertTriangle,
 } from "lucide-react";
 import { useNode, useNodeTrafficTrend } from "@/hooks/useNode";
 import { usePingMini, usePingMiniBuckets } from "@/hooks/usePingMini";
@@ -242,6 +243,11 @@ export const NodeCard = memo(function NodeCard({
                 }}
                 title={statusTitle}
               />
+              {node.message.trim() && (
+                <span className="server-card-message" title={node.message} aria-label={`探针消息：${node.message}`}>
+                  <AlertTriangle size={13} strokeWidth={2.2} />
+                </span>
+              )}
               <Link
                 to={`/instance/${node.uuid}`}
                 className="server-card-detail-link"
@@ -409,6 +415,11 @@ export const NodeCard = memo(function NodeCard({
                 }}
                 title={statusTitle}
               />
+              {node.message.trim() && (
+                <span className="server-card-message" title={node.message} aria-label={`探针消息：${node.message}`}>
+                  <AlertTriangle size={13} strokeWidth={2.2} />
+                </span>
+              )}
             </div>
             {subtitle && (
               <p className="server-card-subtitle" title={subtitle}>

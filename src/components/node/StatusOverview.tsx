@@ -14,6 +14,7 @@ import {
   type TopInfoSplitSettings,
 } from "@/hooks/useVisualStyle";
 import { formatBytes, formatTrafficRateLabel } from "@/utils/format";
+import type { NodeDisplay } from "@/types/komari";
 
 function formatClock(date: Date) {
   return date.toLocaleTimeString("zh-CN", {
@@ -42,6 +43,7 @@ function formatCores(value: number) {
 }
 
 interface StatusOverviewProps {
+  nodes?: NodeDisplay[];
   topInfo?: TopInfoSettings;
   topInfoProgress?: TopInfoProgressSettings;
   topInfoSplit?: TopInfoSplitSettings;
@@ -62,13 +64,15 @@ interface StatusOverviewItem {
 }
 
 export function StatusOverview({
+  nodes: providedNodes,
   topInfo = DEFAULT_TOP_INFO_SETTINGS,
   topInfoProgress = DEFAULT_TOP_INFO_PROGRESS_SETTINGS,
   topInfoSplit = DEFAULT_TOP_INFO_SPLIT_SETTINGS,
   topInfoOrder = DEFAULT_TOP_INFO_ORDER,
   topInfoColumns = 0,
 }: StatusOverviewProps) {
-  const nodes = useVisibleNodes();
+  const visibleNodes = useVisibleNodes();
+  const nodes = providedNodes ?? visibleNodes;
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {

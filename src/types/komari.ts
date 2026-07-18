@@ -131,6 +131,7 @@ export const NodeRealtimeSchema = z
       .default({ tcp: 0, udp: 0 }),
     uptime: z.number().default(0),
     process: z.number().default(0),
+    message: looseString.default(""),
     updated_at: z.union([z.string(), z.number()]).optional(),
   })
   .passthrough();
@@ -145,6 +146,7 @@ export interface NodeRealtime {
   connections: { tcp: number; udp: number };
   uptime: number;
   process: number;
+  message: string;
   updated_at?: string | number;
 }
 
@@ -172,6 +174,7 @@ export interface NodeDisplay extends NodeInfo {
   process: number;
   connectionsTcp: number;
   connectionsUdp: number;
+  message: string;
   updatedAt: number;
 }
 
