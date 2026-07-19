@@ -964,10 +964,10 @@
 
 .radar-gauge-circuit {
   stroke: color-mix(in srgb, var(--radar-color) 86%, white 6%);
-  stroke-width: 1.8px;
+  stroke-width: 2.2px;
   stroke-linecap: round;
   fill: color-mix(in srgb, var(--radar-color) 92%, white 8%);
-  opacity: 0.78;
+  opacity: 0.94;
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--radar-color) 42%, transparent));
   pointer-events: none;
 }
@@ -1010,20 +1010,25 @@
 
 .radar-gauge-art-dual.is-outer {
   stroke-width: 5px;
+  stroke: color-mix(in srgb, var(--radar-color) 58%, #7c5cff 42%);
 }
 
 .radar-gauge-art-dual.is-inner {
   stroke-width: 3px;
+  stroke: color-mix(in srgb, var(--radar-color) 72%, white 28%);
   animation-direction: reverse;
 }
 
 .radar-gauge-art-aurora-ribbon {
   stroke-width: calc(var(--radar-stroke-width, 9px) + 13px);
-  opacity: 0.2;
+  stroke: color-mix(in srgb, var(--radar-color) 54%, #7c5cff 46%);
+  opacity: 0.3;
+  filter: drop-shadow(0 0 7px color-mix(in srgb, #7c5cff 42%, transparent));
   animation: ys-radar-dash-flow calc(var(--radar-pulse-ms, 1800ms) * 1.85) linear infinite;
 }
 
 .radar-gauge-art-aurora-accent {
+  stroke: color-mix(in srgb, var(--radar-color) 70%, white 30%);
   stroke-width: 3px;
   opacity: 0.78;
   filter: drop-shadow(0 0 8px color-mix(in srgb, var(--radar-color) 56%, transparent));
@@ -1416,6 +1421,7 @@
 }
 
 .radar-gauge-ticks {
+  fill: none;
   stroke: color-mix(in srgb, var(--radar-color) 72%, var(--text-tertiary));
   stroke-linecap: round;
   stroke-width: var(--radar-tick-width, 1.6px);
@@ -3255,6 +3261,587 @@
 .liquid-gauge-tech.is-column .liquid-tech-packet.is-one,
 .liquid-gauge-tech.is-drop .liquid-tech-packet.is-one {
   animation: ys-liquid-packet-y var(--liquid-drift-ms, 5500ms) ease-in-out infinite !important;
+}
+
+/* Information dashboard polish: shared hierarchy, stronger instruments, lighter paint cost. */
+.server-card-stack {
+  gap: 14px;
+}
+
+.server-metric-grid,
+.server-traffic-section {
+  gap: 10px;
+}
+
+.metric-item,
+.traffic-stat {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 9px 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--metric-color, var(--border-subtle)) 16%, var(--border-subtle));
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 88% -8%, color-mix(in srgb, var(--metric-color, transparent) 9%, transparent) 0%, transparent 46%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-elev) 66%, transparent), color-mix(in srgb, var(--surface-elev) 46%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent);
+}
+
+.metric-item::before,
+.traffic-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 14% auto;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--metric-color, var(--border-strong)) 72%, white 12%), transparent);
+  opacity: 0.72;
+}
+
+.metric-item-head {
+  min-height: 18px;
+}
+
+.metric-item-label,
+.traffic-stat-label {
+  color: color-mix(in srgb, var(--metric-color, var(--text-secondary)) 66%, var(--text-secondary));
+  font-weight: 680;
+}
+
+.metric-item-icon {
+  display: inline-flex;
+  color: var(--metric-color, var(--text-secondary));
+}
+
+.metric-item-value {
+  font-size: 14px;
+  font-weight: 740;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow:
+    0 1px 2px color-mix(in srgb, var(--surface-elev) 84%, transparent),
+    0 0 7px color-mix(in srgb, var(--metric-color) 12%, transparent);
+}
+
+.metric-detail,
+.traffic-stat-foot {
+  border-color: color-mix(in srgb, var(--metric-color, var(--border-subtle)) 12%, var(--border-subtle));
+  background: color-mix(in srgb, var(--surface-elev) 54%, transparent);
+}
+
+.metric-item .metric-detail,
+.traffic-stat .traffic-stat-foot,
+.traffic-quota .traffic-quota-mode {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.metric-track {
+  height: 10px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.metric-track-canvas {
+  height: 10px;
+}
+
+.traffic-stat {
+  gap: 8px;
+}
+
+.traffic-stat-value {
+  font-size: 17px;
+  font-weight: 740;
+}
+
+.traffic-stat-trend {
+  min-height: 12px;
+}
+
+.server-health-block {
+  position: relative;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 9px 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--health-color, var(--border-subtle)) 15%, var(--border-subtle));
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 88% -8%, color-mix(in srgb, var(--health-color, transparent) 9%, transparent) 0%, transparent 46%),
+    color-mix(in srgb, var(--surface-elev) 52%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 12%, transparent);
+}
+
+.server-health-label {
+  color: color-mix(in srgb, var(--health-color, var(--text-secondary)) 66%, var(--text-secondary));
+}
+
+.server-health-placeholder {
+  min-height: 22px;
+  border: 1px solid color-mix(in srgb, var(--health-color, var(--border-subtle)) 10%, var(--border-subtle));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface-elev) 48%, transparent);
+}
+
+:root[data-gradient-surfaces="true"] .metric-item,
+:root[data-gradient-surfaces="true"] .traffic-stat {
+  border-color: color-mix(
+    in srgb,
+    var(--ys-gradient-surface-secondary) var(--ys-gradient-surface-border),
+    color-mix(in srgb, var(--metric-color, var(--border-subtle)) 18%, var(--border-subtle))
+  );
+  background:
+    radial-gradient(circle at 88% -8%, color-mix(in srgb, var(--metric-color, transparent) 10%, transparent) 0%, transparent 46%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ys-gradient-surface-primary) var(--ys-gradient-surface-faint), color-mix(in srgb, var(--surface-elev) var(--ys-gradient-surface-glass), transparent)),
+      color-mix(in srgb, var(--ys-gradient-surface-secondary) var(--ys-gradient-surface-faint), color-mix(in srgb, var(--surface-elev) var(--ys-gradient-surface-glass), transparent))
+    );
+}
+
+:root[data-card-style="glass"] .metric-item,
+:root[data-card-style="glass"] .traffic-stat {
+  border-color: color-mix(in srgb, white 30%, var(--metric-color, var(--border-subtle)) 20%);
+  background: color-mix(in srgb, var(--surface-elev) 36%, transparent);
+}
+
+:root[data-card-style="neon"] .metric-item,
+:root[data-card-style="neon"] .traffic-stat {
+  border-color: color-mix(in srgb, var(--metric-color, #38bdf8) 36%, #1b2940);
+  background:
+    radial-gradient(circle at 88% 0%, color-mix(in srgb, var(--metric-color, #38bdf8) 17%, transparent) 0%, transparent 46%),
+    color-mix(in srgb, #07111d 90%, var(--metric-color, #38bdf8) 10%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 26px -24px color-mix(in srgb, var(--metric-color, #38bdf8) 76%, black);
+}
+
+:root[data-card-style="minimal"] .metric-item,
+:root[data-card-style="minimal"] .traffic-stat {
+  border-color: color-mix(in srgb, var(--border-subtle) 62%, transparent);
+  background: color-mix(in srgb, var(--surface-elev) 34%, transparent);
+  box-shadow: none;
+}
+
+:root[data-card-style="crt"] .metric-item,
+:root[data-card-style="crt"] .traffic-stat {
+  border-color: color-mix(in srgb, var(--metric-color, #7cffb2) 28%, rgba(124, 255, 178, 0.24));
+  background:
+    repeating-linear-gradient(0deg, rgba(124, 255, 178, 0.025) 0 1px, transparent 1px 4px),
+    rgba(2, 14, 12, 0.58);
+}
+
+.radar-metric-grid {
+  gap: var(--radar-grid-gap, 9px);
+}
+
+.radar-gauge {
+  isolation: isolate;
+  min-height: 116px;
+  padding: var(--radar-padding-y, 9px) var(--radar-padding-x, 9px) 9px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% -8%, color-mix(in srgb, var(--radar-color) 18%, transparent) 0%, transparent 54%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-elev) 74%, transparent), color-mix(in srgb, var(--surface-elev) 52%, transparent));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 18%, transparent),
+    inset 0 -16px 28px color-mix(in srgb, var(--radar-color) 5%, transparent);
+}
+
+.radar-gauge::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--radar-color) 8%, transparent);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.radar-gauge::after {
+  content: "";
+  position: absolute;
+  inset: 0 18% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--radar-color) 74%, white 14%), transparent);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.radar-gauge[data-variant="ring"] {
+  min-height: 128px;
+  border-radius: 8px;
+}
+
+.radar-gauge[data-variant="dial"] {
+  min-height: 120px;
+}
+
+.radar-metric-grid[data-gauge-style] .radar-gauge,
+.liquid-gauge[data-shape] {
+  border-radius: 8px;
+}
+
+.radar-gauge-head,
+.liquid-gauge-head {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.radar-gauge-label,
+.liquid-gauge-label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+
+.radar-gauge-status-dot,
+.liquid-gauge-status-dot {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--radar-color, var(--liquid-color));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--radar-color, var(--liquid-color)) 10%, transparent);
+  opacity: 0.82;
+}
+
+.radar-gauge[data-level="critical"] .radar-gauge-status-dot,
+.liquid-gauge[data-pressure="critical"] .liquid-gauge-status-dot {
+  animation: ys-radar-node-pulse var(--radar-pulse-ms, var(--liquid-pulse-ms, 1800ms)) ease-in-out infinite;
+}
+
+.radar-gauge-stage {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 58px;
+  margin-top: 3px;
+  place-items: center;
+}
+
+.radar-gauge[data-variant="ring"] .radar-gauge-stage {
+  height: 76px;
+  margin-top: 2px;
+}
+
+.radar-gauge[data-variant="dial"] .radar-gauge-stage {
+  height: 63px;
+}
+
+.radar-gauge-svg,
+.radar-gauge-svg.is-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.radar-gauge-svg.is-ring {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.radar-gauge-inner-face {
+  fill: color-mix(in srgb, var(--radar-color) 4%, var(--surface-elev));
+  stroke: color-mix(in srgb, var(--radar-color) 12%, transparent);
+  stroke-width: 1px;
+}
+
+.radar-gauge-baseline {
+  stroke: color-mix(in srgb, var(--radar-color) 22%, var(--border-subtle));
+  stroke-width: 1px;
+  stroke-linecap: round;
+}
+
+.radar-gauge-inner-disc {
+  fill: color-mix(in srgb, var(--surface-elev) 78%, var(--radar-color) 4%);
+  stroke: color-mix(in srgb, var(--radar-color) 16%, var(--border-subtle));
+  stroke-width: 1.2px;
+}
+
+.radar-gauge-inner-grid {
+  fill: none;
+  stroke: color-mix(in srgb, var(--radar-color) 18%, transparent);
+  stroke-width: 1px;
+  stroke-dasharray: 1.6 7;
+}
+
+.radar-gauge-terminal {
+  fill: color-mix(in srgb, white 82%, var(--radar-color) 18%);
+  stroke: var(--radar-color);
+  stroke-width: 1.4px;
+  transition:
+    cx var(--radar-motion-ms, 520ms) cubic-bezier(0.22, 0.61, 0.36, 1),
+    cy var(--radar-motion-ms, 520ms) cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.radar-gauge-value {
+  position: absolute;
+  top: 56%;
+  left: 50%;
+  z-index: 3;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow:
+    0 1px 2px color-mix(in srgb, var(--surface-elev) 84%, transparent),
+    0 0 7px color-mix(in srgb, var(--radar-color) 14%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+.radar-gauge[data-variant="ring"] .radar-gauge-value {
+  top: 50%;
+  margin: 0;
+}
+
+.radar-gauge[data-variant="dial"] .radar-gauge-value {
+  top: 48%;
+}
+
+.radar-gauge-foot,
+.liquid-gauge-foot {
+  width: 100%;
+  min-height: 20px;
+  margin-top: 4px;
+  padding: 0;
+  align-items: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: color-mix(in srgb, var(--text-secondary) 70%, var(--radar-color, var(--liquid-color)) 30%);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--surface-elev) 82%, transparent);
+}
+
+.radar-gauge[data-variant="ring"] .radar-gauge-foot {
+  margin-top: 4px;
+}
+
+.radar-gauge[data-variant="dial"] .radar-gauge-fill {
+  opacity: 0.48;
+}
+
+.radar-gauge-ticks .is-major {
+  stroke-width: calc(var(--radar-tick-width, 1.6px) + 0.8px);
+  opacity: 1;
+}
+
+.radar-gauge-pivot-ring {
+  fill: color-mix(in srgb, var(--radar-color) 14%, transparent);
+  stroke: color-mix(in srgb, var(--radar-color) 52%, white 12%);
+  stroke-width: 1.1px;
+}
+
+.radar-gauge-pivot {
+  fill: color-mix(in srgb, var(--surface-elev) 92%, black 5%);
+  stroke-width: 2.4px;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--radar-color) 48%, transparent));
+}
+
+.radar-metric-grid[data-gauge-style="minimal"] .radar-gauge::before,
+.radar-metric-grid[data-gauge-style="minimal"] .radar-gauge::after,
+.radar-metric-grid[data-gauge-style="minimal"] .radar-gauge-status-dot,
+.radar-metric-grid[data-gauge-style="minimal"] .radar-gauge-inner-grid {
+  display: none;
+}
+
+.radar-metric-grid[data-gauge-style="segmented"] .radar-gauge-inner-grid,
+.radar-metric-grid[data-gauge-style="pulse"] .radar-gauge-inner-grid,
+.radar-metric-grid[data-gauge-style="scan"] .radar-gauge-inner-grid {
+  stroke-dasharray: 1 4.2;
+  opacity: 0.82;
+}
+
+.liquid-gauge {
+  min-height: 138px;
+  padding: 9px 9px 9px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--liquid-color) 15%, transparent) 0%, transparent 48%),
+    radial-gradient(circle at 16% 0%, color-mix(in srgb, white 12%, transparent) 0%, transparent 30%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-elev) 76%, transparent), color-mix(in srgb, var(--liquid-color) 8%, var(--surface-elev)));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 20%, transparent),
+    inset 0 -18px 30px color-mix(in srgb, var(--liquid-color) 7%, transparent);
+}
+
+.liquid-gauge::before {
+  inset: 6px;
+  border: 1px solid color-mix(in srgb, var(--liquid-color) 9%, transparent);
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, transparent 0 49%, color-mix(in srgb, white 8%, transparent) 49% 50%, transparent 50%),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--liquid-color) 7%, transparent) 0 1px, transparent 1px 12px);
+  opacity: calc(var(--liquid-hud-opacity, 0.28) * 0.72);
+}
+
+.liquid-gauge-head {
+  min-height: 15px;
+}
+
+.liquid-gauge-status-dot {
+  background: var(--liquid-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--liquid-color) 10%, transparent);
+}
+
+.liquid-gauge-stage {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 88px;
+  margin-top: 1px;
+  place-items: center;
+}
+
+.liquid-gauge-stage::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  width: 68%;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--liquid-color) 22%, transparent), transparent 70%);
+  opacity: calc(0.34 + var(--liquid-glow-extra, 0));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.liquid-gauge-svg {
+  position: absolute;
+  inset: 0;
+  width: min(98px, 100%);
+  height: 86px;
+  margin: auto;
+}
+
+.liquid-gauge[data-shape="capsule"] .liquid-gauge-svg,
+.liquid-gauge[data-shape="segmented"] .liquid-gauge-svg {
+  width: min(126px, 100%);
+  height: 74px;
+  margin: auto;
+}
+
+.liquid-gauge[data-shape="column"] .liquid-gauge-svg {
+  width: min(82px, 100%);
+  height: 90px;
+  margin: auto;
+}
+
+.liquid-gauge[data-shape="lens"] .liquid-gauge-svg {
+  width: min(124px, 100%);
+  height: 76px;
+  margin: auto;
+}
+
+.liquid-gauge[data-shape="drop"] .liquid-gauge-svg,
+.liquid-gauge[data-shape="ring"] .liquid-gauge-svg {
+  width: min(94px, 100%);
+  height: 86px;
+  margin: auto;
+}
+
+.liquid-gauge[data-shape] .liquid-gauge-value {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  z-index: 3;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow:
+    0 1px 2px color-mix(in srgb, var(--surface-elev) 84%, transparent),
+    0 0 7px color-mix(in srgb, var(--liquid-color) 14%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+.liquid-gauge[data-shape="column"] .liquid-gauge-value {
+  top: 55%;
+}
+
+.liquid-gauge[data-shape="drop"] .liquid-gauge-value {
+  top: 57%;
+}
+
+.liquid-gauge[data-shape] .liquid-gauge-foot {
+  margin-top: 4px;
+}
+
+.liquid-gauge-vessel {
+  fill: color-mix(in srgb, var(--liquid-color) 11%, var(--surface-elev));
+  stroke: color-mix(in srgb, white 34%, var(--liquid-color) 58%);
+  stroke-width: 2px;
+  opacity: 0.96;
+}
+
+.liquid-gauge-glass {
+  fill: color-mix(in srgb, white 9%, transparent);
+  stroke: color-mix(in srgb, white 52%, var(--liquid-color) 36%);
+  stroke-width: 1.65px;
+}
+
+.liquid-frame-rim {
+  stroke-width: 2.9px;
+}
+
+.liquid-gauge-tech {
+  opacity: calc(0.42 + var(--liquid-texture-opacity, 0.18));
+}
+
+.liquid-tech-sweep {
+  transform-box: view-box !important;
+  transform-origin: 50px 50px !important;
+  opacity: calc(var(--liquid-hud-opacity, 0.24) * 0.38);
+}
+
+.liquid-gauge-wave {
+  filter: none !important;
+}
+
+:root[data-card-style="minimal"] .liquid-gauge-stage::before,
+:root[data-card-style="minimal"] .liquid-gauge-status-dot {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .metric-item,
+  .traffic-stat {
+    padding: 8px 9px 9px;
+  }
+
+  .radar-gauge {
+    min-height: 112px;
+  }
+
+  .radar-gauge[data-variant="ring"] {
+    min-height: 122px;
+  }
+
+  .liquid-gauge {
+    min-height: 134px;
+  }
 }
 
 @keyframes ys-crt-scan {

@@ -67,8 +67,9 @@ src/
 | `src/components/node/NodeTopologyPanel.tsx` | 分组拓扑、上下游标签和共同故障分析 | 上游标签语法和共同故障规则从这里改 |
 | `src/components/node/SnapshotExportPanel.tsx` | 当前筛选节点的 JSON/CSV 导出 UI | 导出字段与安全处理主要在 `services/snapshot.ts` |
 | `src/components/node/NodeGeoPanel.tsx` | 按需加载的 WebGL 交互地球、昼夜纹理、地区节点与图例 | 地球外观、交互、节点聚合、暂停和销毁逻辑从这里改 |
-| `src/components/node/VisitorInfo.tsx` | 第三方 IP 信息源自动回退和顶层访客弹窗 | 信息源、超时、自动弹出、ISP/ASN/Organization normalize 从这里改 |
+| `src/components/node/VisitorInfo.tsx` | 第三方 IP 信息源自动回退、顶层访客弹窗和默认头像 | 信息源、超时、自动弹出、ISP/ASN/Organization normalize 从这里改；默认头像位于 `public/assets/visitor-avatar.jpg` |
 | `src/components/node/NodeCard.tsx` | 节点卡片主体渲染 | 尽量只放组件结构，绘制工具放 `dashboardHelpers.tsx` |
+| `src/components/node/StatusCorePanel.tsx` | 状态核心展板的数据映射和 8 种悬浮/断裂形态 | 新增核心形态从这里进；保持纯 DOM/CSS 和边缘动画，不要复制液位 SVG |
 | `src/components/node/CanvasStrip.tsx` | 数据条/跑马灯/趋势条的 Canvas 基础组件 | 已使用共享 ResizeObserver/IntersectionObserver，新增动画不要再为每条数据创建独立全局监听 |
 | `src/components/node/dashboardHelpers.tsx` | 弧光/全环/指针/液位展板的数学、SVG、CSS 变量工具 | 新增仪表盘形态或样式优先放这里 |
 | `src/components/node/marqueeStyle.ts` | 跑马灯 canvas 绘制和动画节奏 | 新增跑马灯样式从这里进 |
@@ -87,6 +88,7 @@ src/
 | `src/styles/surface/foundation.css` | 背景板、快捷面板、设置页、总览等基础样式 | 快捷面板和设置页样式从这里进 |
 | `src/styles/surface/instance.css` | 节点详情页样式 | 详情页图表和信息块样式从这里进 |
 | `src/styles/surface/node-card.css` | 首页节点卡片、仪表盘、液位、卡片外壳样式 | 卡片外观和展板动画从这里进 |
+| `src/styles/surface/status-core.css` | 状态核心布局、8 种形态、设置预览和响应式样式 | 保持无大外壳、仅边缘元素持续动画，并同步检查 `prefers-reduced-motion` |
 
 ## 数据流
 
@@ -197,12 +199,19 @@ interface ThemeSettings {
 
 - `cardStyle`：卡片外壳，当前包含数据面板、清透玻璃、霓虹暗面、柔和彩块、极简白板、复古 CRT。
 - `cardLayout`：方卡片或条形卡片。
-- `dashboardStyle`：信息展板，当前包含数据条、弧光仪表、全环仪表、指针仪表、液位容器。
+- `dashboardStyle`：信息展板，当前包含数据条、弧光仪表、全环仪表、指针仪表、液位容器、状态核心。
 - `dashboardSettings`：各展板专属调节项。
 - `marqueePalette` / `colors`：跑马灯指标颜色。
 - `marqueeStyle`：数据条跑马灯的形态、密度、圆角、光晕、动效。
 - `radarLatencyMaxMs`：延迟仪表上限，超过拉满。
 - `showTrafficQuota`：数据条信息展板里的出入站额度统计显示开关。
+
+展板渲染约定：
+
+- 数据条的资源、流量额度继续统一复用 `MetricBar` / `CanvasStrip` / `drawMarqueeStrip`，不要为单个指标另写一套进度实现。
+- 弧光、全环和指针共用 `RadarGauge`，几何与个性绘制放在 `dashboardHelpers.tsx`；半环内外层必须通过 `renderArcPath(..., radius)` 保持真实半径差。
+- 液位形态共用 `LiquidGauge`。横向胶囊、分段胶囊和透镜依赖 `preserveAspectRatio="none"` 形成横向容器，不要改回正方形等比缩放。
+- 状态核心使用独立 `dashboardStyle: "core"` 和 `dashboardSettings.core`；形态放在 `StatusCorePanel.tsx`，样式放在 `status-core.css`。不要并回 `LiquidGauge`，也不要让每个分段都持续动画。
 - `topInfo`：顶部信息显示开关，项目包含当前时间、节点总数、当前在线、点亮地区、总上下行流量、总流量速率、总 CPU、总内存、总硬盘。
 - `topInfoProgress`：顶部信息百分比条开关，目前只作用于当前在线、总 CPU、总内存、总硬盘。
 - `topInfoSplit`：顶部信息拆开显示开关，目前只作用于总上下行流量和总流量速率；开启后分别渲染上传/下载、上行/下行独立卡片。
@@ -243,6 +252,8 @@ interface ThemeSettings {
 
 - `FloatingControls` 在 `AppShell` 中通过 `DeferredFloatingControls` 懒加载，并等待 `requestIdleCallback` 或短延时后再加载；不要在首屏入口重新静态导入。
 - `CanvasStrip` 使用共享 `ResizeObserver` 和共享 `IntersectionObserver`，并用全局动画循环调度绘制；新增跑马灯/趋势条时复用 `CanvasStrip`，不要每个组件自己创建 RAF 循环。
+- 仪表动效使用 SVG 描边、坐标过渡和 CSS transform，不创建逐仪表 RAF；指针刻度已合并为两条静态 SVG path，避免恢复为每个刻度一个 DOM 节点。
+- 液位性能保护位于 `surface/node-card.css` 的 `Liquid dashboard performance guard` 段，只保留水波、液面、单气泡、扫描和一个节点/数据包动画；不要重新启用整组 SVG filter 或所有装饰动画。
 - `NodeGrid` 统一读取 `resolvedAppearance` 并传给 `NodeCard`，避免大量节点时每张卡重复订阅 `usePreferences()`。
 - `usePreferences()` 不再手写额外 `/api/public` 请求，默认外观跟随 `usePublicConfig()`，避免首屏重复请求。
 - 首页 Ping mini 调度使用 `useHomepagePingOverviewForNodes(uuids)`，复用当前节点列表，避免额外全局订阅和重复过滤。

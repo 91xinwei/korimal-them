@@ -76,6 +76,8 @@ import {
 import {
   CARD_LAYOUT_PRESETS,
   CARD_STYLE_PRESETS,
+  CORE_SHAPE_PRESETS,
+  CORE_TUNING_CONTROLS,
   DASHBOARD_STYLE_PRESETS,
   DASHBOARD_TUNING_CONTROLS,
   DEFAULT_VISUAL_STYLE_SETTINGS,
@@ -89,6 +91,7 @@ import {
   RADAR_LATENCY_MAX_STEP_MS,
   VISUAL_COLOR_CONTROLS,
   normalizeVisualStyleSettings,
+  patchCoreDashboardSetting,
   patchLiquidDashboardSetting,
   patchDashboardSetting,
   serializeVisualStyleSettings,
@@ -1138,6 +1141,95 @@ export function ThemeManage() {
                   })}
                 </div>
               )}
+              {draftVisualStyle.dashboardStyle === "core" && (
+                <div className="mt-4 grid gap-3 border-t border-[var(--hairline)] pt-4">
+                  <div className="text-[12px] font-semibold text-[var(--text-secondary)]">
+                    核心形态
+                  </div>
+                  <div className="visual-style-preset-list is-grid is-core-shape">
+                    {CORE_SHAPE_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        className="visual-style-preset"
+                        data-active={
+                          draftVisualStyle.dashboardSettings.core.shape === preset.id
+                            ? "true"
+                            : "false"
+                        }
+                        onClick={() =>
+                          updateDraftVisualStyle({
+                            dashboardSettings: patchCoreDashboardSetting(
+                              draftVisualStyle.dashboardSettings,
+                              "shape",
+                              preset.id,
+                            ),
+                          })
+                        }
+                      >
+                        <span className="visual-style-preset-name">
+                          {preset.label}
+                        </span>
+                        <span className="visual-style-preset-copy">
+                          {preset.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-[12px] font-semibold text-[var(--text-secondary)]">
+                    核心细节
+                  </div>
+                  <label className="gradient-range-control !mt-0">
+                    <span>
+                      <span>延迟上限</span>
+                      <strong>{draftVisualStyle.radarLatencyMaxMs}ms</strong>
+                    </span>
+                    <input
+                      type="range"
+                      min={RADAR_LATENCY_MAX_MIN_MS}
+                      max={RADAR_LATENCY_MAX_MAX_MS}
+                      step={RADAR_LATENCY_MAX_STEP_MS}
+                      value={draftVisualStyle.radarLatencyMaxMs}
+                      onChange={(event) =>
+                        updateDraftVisualStyle({
+                          radarLatencyMaxMs: Number(event.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  {CORE_TUNING_CONTROLS.map(({ key, label, max = 100 }) => {
+                    const value = Number(
+                      draftVisualStyle.dashboardSettings.core[
+                        key as keyof typeof draftVisualStyle.dashboardSettings.core
+                      ],
+                    );
+
+                    return (
+                      <label key={key} className="gradient-range-control !mt-0">
+                        <span>
+                          <span>{label}</span>
+                          <strong>{value}%</strong>
+                        </span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={max}
+                          value={value}
+                          onChange={(event) =>
+                            updateDraftVisualStyle({
+                              dashboardSettings: patchCoreDashboardSetting(
+                                draftVisualStyle.dashboardSettings,
+                                key,
+                                Number(event.target.value),
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
               {draftVisualStyle.dashboardStyle === "bars" && (
                 <div className="mt-4 border-t border-[var(--hairline)] pt-4">
                   <div className="gradient-surface-sync mb-4">
@@ -1354,6 +1446,7 @@ export function ThemeManage() {
             data-card-layout={draftVisualStyle.cardLayout}
             data-dashboard-style={draftVisualStyle.dashboardStyle}
             data-liquid-shape={draftVisualStyle.dashboardSettings.liquid.shape}
+            data-core-shape={draftVisualStyle.dashboardSettings.core.shape}
             data-marquee-style={draftVisualStyle.marqueeStyle.shape}
             style={
               (() => {

@@ -35,6 +35,8 @@ const EMPTY_VISITOR: VisitorData = {
   asn: "",
 };
 
+const VISITOR_AVATAR_URL = "/assets/visitor-avatar.jpg";
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -208,7 +210,15 @@ export function VisitorInfo({ showTrigger = true }: { showTrigger?: boolean }) {
       {open && createPortal(
         <div ref={dialogRef} className="visitor-info-popover" role="dialog" aria-label="访客网络信息">
           <div className="visitor-info-head">
-            <span className="visitor-info-avatar"><CircleUserRound size={19} /></span>
+            <span className="visitor-info-avatar" aria-hidden>
+              <CircleUserRound className="visitor-info-avatar-fallback" size={20} />
+              <img
+                src={VISITOR_AVATAR_URL}
+                alt=""
+                draggable={false}
+                onError={(event) => { event.currentTarget.hidden = true; }}
+              />
+            </span>
             <span>
               <strong>欢迎访问</strong>
             </span>

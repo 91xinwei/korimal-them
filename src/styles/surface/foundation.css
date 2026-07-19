@@ -526,18 +526,21 @@
 }
 
 .visual-style-preset-list.is-gauge-style,
-.visual-style-preset-list.is-liquid-shape {
+.visual-style-preset-list.is-liquid-shape,
+.visual-style-preset-list.is-core-shape {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
 .visual-style-preset-list.is-gauge-style .visual-style-preset,
-.visual-style-preset-list.is-liquid-shape .visual-style-preset {
+.visual-style-preset-list.is-liquid-shape .visual-style-preset,
+.visual-style-preset-list.is-core-shape .visual-style-preset {
   padding: 8px;
 }
 
 .visual-style-preset-list.is-gauge-style .visual-style-preset-copy,
-.visual-style-preset-list.is-liquid-shape .visual-style-preset-copy {
+.visual-style-preset-list.is-liquid-shape .visual-style-preset-copy,
+.visual-style-preset-list.is-core-shape .visual-style-preset-copy {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;

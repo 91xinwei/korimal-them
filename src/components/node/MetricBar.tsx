@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, type CSSProperties, type ReactNode } from "react";
 import type { MarqueeStyleSettings } from "@/hooks/useVisualStyle";
 import { CanvasStrip } from "./CanvasStrip";
 import {
@@ -70,20 +70,29 @@ export function MetricBar({
         colors: {
           base: activeColor,
           accent: accentColor,
-          inactive: "var(--progress-bg)",
+          inactive: "transparent",
         },
       }),
     [accentColor, activeColor, marqueeStyle, points],
   );
 
   return (
-    <div className={className ? `metric-item ${className}` : "metric-item"} title={title}>
-      <div className="flex justify-between items-center gap-3 min-w-0">
-        <div className="flex items-center gap-1.5 text-[var(--text-secondary)] flex-shrink-0">
-          <span>{icon}</span>
+    <div
+      className={className ? `metric-item ${className}` : "metric-item"}
+      title={title}
+      style={
+        {
+          "--metric-color": activeColor,
+          "--metric-accent": accentColor,
+        } as CSSProperties
+      }
+    >
+      <div className="metric-item-head flex justify-between items-center gap-3 min-w-0">
+        <div className="metric-item-label flex items-center gap-1.5 text-[var(--text-secondary)] flex-shrink-0">
+          <span className="metric-item-icon">{icon}</span>
           <span className="text-[11px] font-medium tracking-[0.02em]">{label}</span>
         </div>
-        <div className="tabular text-[13px] text-[var(--text-primary)] whitespace-nowrap overflow-hidden text-ellipsis max-w-full text-right">
+        <div className="metric-item-value tabular text-[13px] text-[var(--text-primary)] whitespace-nowrap overflow-hidden text-ellipsis max-w-full text-right">
           <span className="font-semibold">{valueText}</span>
           {unit && (
             <span className="ml-[1px] text-[11px] text-[var(--text-tertiary)]">{unit}</span>

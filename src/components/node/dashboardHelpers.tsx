@@ -8,7 +8,10 @@ import type {
   LiquidDashboardSettings,
 } from "@/hooks/useVisualStyle";
 
-export type GaugeDashboardStyleId = Exclude<DashboardStylePresetId, "bars" | "liquid">;
+export type GaugeDashboardStyleId = Exclude<
+  DashboardStylePresetId,
+  "bars" | "liquid" | "core"
+>;
 
 export function buildSubtitle(parts: Array<string | null | undefined>) {
   return parts
@@ -80,13 +83,14 @@ export function scaleBoostedPercent(value: number, min: number, maxAt100: number
 }
 
 export function dashboardMotionStyle(value: number, transitionMin: number, transitionMax: number) {
+  const fastestTransition = Math.max(120, transitionMin - 90);
   return {
     "--radar-motion-ms": `${Math.round(
-      scaleBoostedPercent(value, transitionMin, transitionMax, transitionMax + 220),
+      scaleBoostedPercent(value, transitionMax, transitionMin, fastestTransition),
     )}ms`,
-    "--radar-motion-pulse-opacity": scaleBoostedPercent(value, 0, 0.12, 0.32).toFixed(3),
+    "--radar-motion-pulse-opacity": scaleBoostedPercent(value, 0, 0.14, 0.3).toFixed(3),
     "--radar-pulse-ms": `${Math.round(
-      scaleBoostedPercent(value, 2600, 1700, 980),
+      scaleBoostedPercent(value, 3000, 1650, 880),
     )}ms`,
   };
 }
@@ -104,9 +108,6 @@ export function getSegmentTrackStyle(gaugeStyle: GaugeStylePresetId) {
   }
   if (gaugeStyle === "pulse") {
     return { strokeDasharray: "1 3.2" } as CSSProperties;
-  }
-  if (gaugeStyle === "circuit") {
-    return { strokeDasharray: "5 7" } as CSSProperties;
   }
   if (gaugeStyle === "scan") {
     return { strokeDasharray: "1 5.4" } as CSSProperties;
@@ -193,11 +194,17 @@ export function renderRingCircle(className: string, radius: number, style?: CSSP
   );
 }
 
-export function renderArcPath(className: string, style?: CSSProperties) {
+export function renderArcPath(
+  className: string,
+  style?: CSSProperties,
+  radius = 46,
+) {
+  const startX = 60 - radius;
+  const endX = 60 + radius;
   return (
     <path
       className={className}
-      d="M 14 58 A 46 46 0 0 1 106 58"
+      d={`M ${startX} 58 A ${radius} ${radius} 0 0 1 ${endX} 58`}
       pathLength={100}
       style={style}
     />
@@ -212,7 +219,7 @@ export function renderGaugePath(
 ) {
   return variant === "ring"
     ? renderRingCircle(className, radius, style)
-    : renderArcPath(className, style);
+    : renderArcPath(className, style, radius);
 }
 
 export function renderGaugeBackArt(
@@ -430,10 +437,10 @@ export function dashboardGaugeStyle(
       "--radar-glow-width": `${scaleBoostedPercent(ring.glow, 9, 19, 30).toFixed(1)}px`,
       "--radar-glow-opacity": scaleBoostedPercent(ring.glow, 0.04, 0.24, 0.42).toFixed(3),
       ...dashboardMotionStyle(ring.motion, 240, 860),
-      "--radar-value-size": `${scalePercentLegacy(ring.centerScale, 13, 18).toFixed(1)}px`,
-      "--radar-grid-gap": "10px",
-      "--radar-padding-y": "8px",
-      "--radar-padding-x": "7px",
+      "--radar-value-size": `${scalePercentLegacy(ring.centerScale, 15, 21).toFixed(1)}px`,
+      "--radar-grid-gap": "9px",
+      "--radar-padding-y": "9px",
+      "--radar-padding-x": "9px",
     } as CSSProperties;
   }
 
@@ -447,10 +454,10 @@ export function dashboardGaugeStyle(
       "--radar-needle-width": `${scalePercentLegacy(dial.needle, 1.8, 5.6).toFixed(1)}px`,
       "--radar-tick-opacity": scalePercentLegacy(dial.ticks, 0.08, 0.74).toFixed(3),
       "--radar-tick-width": `${scalePercentLegacy(dial.ticks, 1, 2.8).toFixed(1)}px`,
-      "--radar-value-size": "15px",
-      "--radar-grid-gap": "10px",
-      "--radar-padding-y": "8px",
-      "--radar-padding-x": "7px",
+      "--radar-value-size": "16px",
+      "--radar-grid-gap": "9px",
+      "--radar-padding-y": "9px",
+      "--radar-padding-x": "9px",
     } as CSSProperties;
   }
 
@@ -460,10 +467,10 @@ export function dashboardGaugeStyle(
     "--radar-glow-width": `${scaleBoostedPercent(arc.glow, 9, 20, 32).toFixed(1)}px`,
     "--radar-glow-opacity": scaleBoostedPercent(arc.glow, 0.04, 0.25, 0.44).toFixed(3),
     ...dashboardMotionStyle(arc.motion, 220, 840),
-    "--radar-grid-gap": `${scalePercentLegacy(arc.compactness, 14, 8).toFixed(1)}px`,
-    "--radar-padding-y": `${scalePercentLegacy(arc.compactness, 10, 6.5).toFixed(1)}px`,
-    "--radar-padding-x": `${scalePercentLegacy(arc.compactness, 9, 6).toFixed(1)}px`,
-    "--radar-value-size": "15px",
+    "--radar-grid-gap": `${scalePercentLegacy(arc.compactness, 13, 8).toFixed(1)}px`,
+    "--radar-padding-y": `${scalePercentLegacy(arc.compactness, 10, 8).toFixed(1)}px`,
+    "--radar-padding-x": `${scalePercentLegacy(arc.compactness, 10, 8).toFixed(1)}px`,
+    "--radar-value-size": "16px",
   } as CSSProperties;
 }
 
@@ -475,13 +482,13 @@ export function liquidDashboardStyle(settings: LiquidDashboardSettings) {
     "--liquid-bottom-mix": `${Math.round(scaleBoostedPercent(settings.glow, 7, 12, 19))}%`,
     "--liquid-shadow-mix": `${Math.round(scaleBoostedPercent(settings.glow, 52, 68, 88))}%`,
     "--liquid-svg-glow-mix": `${Math.round(scaleBoostedPercent(settings.glow, 18, 34, 58))}%`,
-    "--liquid-fill-opacity": scaleBoostedPercent(settings.glow, 0.62, 0.78, 0.96).toFixed(3),
-    "--liquid-wave-opacity": scaleBoostedPercent(settings.glow, 0.72, 0.86, 0.98).toFixed(3),
+    "--liquid-fill-opacity": scaleBoostedPercent(settings.glow, 0.72, 0.9, 1).toFixed(3),
+    "--liquid-wave-opacity": scaleBoostedPercent(settings.glow, 0.8, 0.94, 1).toFixed(3),
     "--liquid-shine-opacity": scalePercentLegacy(settings.glass, 0.08, 0.28).toFixed(3),
     "--liquid-segment-opacity": scalePercentLegacy(settings.glass, 0.18, 0.56).toFixed(3),
-    "--liquid-texture-opacity": scalePercentLegacy(settings.texture, 0, 0.48).toFixed(3),
-    "--liquid-hud-opacity": scalePercentLegacy(settings.texture, 0.18, 0.78).toFixed(3),
-    "--liquid-panel-opacity": scalePercentLegacy(settings.glass, 0.18, 0.52).toFixed(3),
+    "--liquid-texture-opacity": scalePercentLegacy(settings.texture, 0, 0.38).toFixed(3),
+    "--liquid-hud-opacity": scalePercentLegacy(settings.texture, 0.08, 0.52).toFixed(3),
+    "--liquid-panel-opacity": scalePercentLegacy(settings.glass, 0.1, 0.34).toFixed(3),
   } as CSSProperties;
 }
 

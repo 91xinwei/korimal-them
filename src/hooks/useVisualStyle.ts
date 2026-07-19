@@ -14,8 +14,12 @@ export type DashboardStylePresetId =
   | "arc"
   | "ring"
   | "dial"
-  | "liquid";
-export type TunableDashboardStyleId = Exclude<DashboardStylePresetId, "bars" | "liquid">;
+  | "liquid"
+  | "core";
+export type TunableDashboardStyleId = Exclude<
+  DashboardStylePresetId,
+  "bars" | "liquid" | "core"
+>;
 export type GaugeStylePresetId =
   | "clean"
   | "neon"
@@ -61,6 +65,15 @@ export type LiquidShapeId =
   | "crystal"
   | "drop"
   | "ring";
+export type CoreShapeId =
+  | "fiber"
+  | "grating"
+  | "wafer"
+  | "beads"
+  | "bridge"
+  | "fission"
+  | "broken-bridge"
+  | "grid";
 export type TopInfoItemId =
   | "time"
   | "total"
@@ -136,11 +149,20 @@ export interface LiquidDashboardSettings {
   texture: number;
 }
 
+export interface CoreDashboardSettings {
+  shape: CoreShapeId;
+  density: number;
+  fracture: number;
+  glow: number;
+  motion: number;
+}
+
 export interface DashboardSettings {
   arc: ArcDashboardSettings;
   ring: RingDashboardSettings;
   dial: DialDashboardSettings;
   liquid: LiquidDashboardSettings;
+  core: CoreDashboardSettings;
 }
 
 export type TopInfoSettings = Record<TopInfoItemId, boolean>;
@@ -212,6 +234,12 @@ export interface MarqueeStylePreset {
 
 export interface LiquidShapePreset {
   id: LiquidShapeId;
+  label: string;
+  description: string;
+}
+
+export interface CoreShapePreset {
+  id: CoreShapeId;
   label: string;
   description: string;
 }
@@ -418,6 +446,11 @@ export const DASHBOARD_STYLE_PRESETS: DashboardStylePreset[] = [
     label: "液位容器",
     description: "统一用水波液位展示所有实时指标",
   },
+  {
+    id: "core",
+    label: "状态核心",
+    description: "用断裂、悬浮和晶格结构表达实时状态",
+  },
 ];
 
 export const GAUGE_STYLE_PRESETS: GaugeStylePreset[] = [
@@ -537,6 +570,56 @@ export const LIQUID_TUNING_CONTROLS: DashboardTuningControl[] = [
   { key: "glow", label: "光晕强度", max: 200 },
   { key: "motion", label: "动效强度", max: 200 },
   { key: "texture", label: "纹理强度" },
+];
+
+export const CORE_SHAPE_PRESETS: CoreShapePreset[] = [
+  {
+    id: "fiber",
+    label: "断续双轨",
+    description: "双路光纤分段点亮，保留错位和断续节奏",
+  },
+  {
+    id: "grating",
+    label: "错位光栅",
+    description: "长短光栅交错悬浮，形成轻薄的数据切片",
+  },
+  {
+    id: "wafer",
+    label: "斜切晶片",
+    description: "厚薄晶片逐层点亮，突出硬件与层叠质感",
+  },
+  {
+    id: "beads",
+    label: "磁悬液珠",
+    description: "液珠断续悬浮，当前进度边缘带轻微浮动",
+  },
+  {
+    id: "bridge",
+    label: "晶格液桥",
+    description: "两侧晶格夹持液态光桥，兼顾液位与结构感",
+  },
+  {
+    id: "fission",
+    label: "裂变液滴链",
+    description: "液滴在进度边缘轻微裂变，变化更有生命力",
+  },
+  {
+    id: "broken-bridge",
+    label: "断桥矩阵",
+    description: "两侧矩阵保持间隙，光点在断口之间传输",
+  },
+  {
+    id: "grid",
+    label: "三通道晶格",
+    description: "三列晶格错位点亮，适合紧凑科技卡片",
+  },
+];
+
+export const CORE_TUNING_CONTROLS: DashboardTuningControl[] = [
+  { key: "density", label: "结构密度" },
+  { key: "fracture", label: "断裂程度" },
+  { key: "glow", label: "光晕强度", max: 200 },
+  { key: "motion", label: "动效强度", max: 200 },
 ];
 
 export const DASHBOARD_TUNING_CONTROLS: Record<
@@ -909,6 +992,13 @@ export const DEFAULT_DASHBOARD_SETTINGS: DashboardSettings = {
     motion: 54,
     texture: 42,
   },
+  core: {
+    shape: "fiber",
+    density: 58,
+    fracture: 62,
+    glow: 48,
+    motion: 54,
+  },
 };
 export const DEFAULT_VISUAL_STYLE_SETTINGS: VisualStyleSettings = {
   cardStyle: "panel",
@@ -961,7 +1051,8 @@ function isDashboardStyle(value: unknown): value is DashboardStylePresetId {
     value === "arc" ||
     value === "ring" ||
     value === "dial" ||
-    value === "liquid"
+    value === "liquid" ||
+    value === "core"
   );
 }
 
@@ -1026,6 +1117,19 @@ function isLiquidShape(value: unknown): value is LiquidShapeId {
     value === "crystal" ||
     value === "drop" ||
     value === "ring"
+  );
+}
+
+function isCoreShape(value: unknown): value is CoreShapeId {
+  return (
+    value === "fiber" ||
+    value === "grating" ||
+    value === "wafer" ||
+    value === "beads" ||
+    value === "bridge" ||
+    value === "fission" ||
+    value === "broken-bridge" ||
+    value === "grid"
   );
 }
 
@@ -1157,6 +1261,18 @@ function normalizeLiquidDashboardSettings(value: unknown): LiquidDashboardSettin
   };
 }
 
+function normalizeCoreDashboardSettings(value: unknown): CoreDashboardSettings {
+  const fallback = DEFAULT_DASHBOARD_SETTINGS.core;
+  const record = isSettingsObject(value) ? (value as Partial<CoreDashboardSettings>) : {};
+  return {
+    shape: isCoreShape(record.shape) ? record.shape : fallback.shape,
+    density: normalizePercent(record.density, fallback.density),
+    fracture: normalizePercent(record.fracture, fallback.fracture),
+    glow: normalizePercent200(record.glow, fallback.glow),
+    motion: normalizePercent200(record.motion, fallback.motion),
+  };
+}
+
 export function normalizeDashboardSettings(value: unknown): DashboardSettings {
   const record = isSettingsObject(value) ? (value as Partial<DashboardSettings>) : {};
   return {
@@ -1164,6 +1280,7 @@ export function normalizeDashboardSettings(value: unknown): DashboardSettings {
     ring: normalizeRingDashboardSettings(record.ring),
     dial: normalizeDialDashboardSettings(record.dial),
     liquid: normalizeLiquidDashboardSettings(record.liquid),
+    core: normalizeCoreDashboardSettings(record.core),
   };
 }
 
@@ -1191,6 +1308,20 @@ export function patchLiquidDashboardSetting(
     ...settings,
     liquid: {
       ...settings.liquid,
+      [key]: value,
+    },
+  });
+}
+
+export function patchCoreDashboardSetting(
+  settings: DashboardSettings,
+  key: string,
+  value: unknown,
+) {
+  return normalizeDashboardSettings({
+    ...settings,
+    core: {
+      ...settings.core,
       [key]: value,
     },
   });
@@ -1464,6 +1595,7 @@ function applyDocumentStyle(settings: VisualStyleSettings) {
   root.dataset.cardStyle = normalized.cardStyle;
   root.dataset.cardLayout = normalized.cardLayout;
   root.dataset.dashboardStyle = normalized.dashboardStyle;
+  root.dataset.coreShape = normalized.dashboardSettings.core.shape;
   root.dataset.marqueePalette = normalized.marqueePalette;
   root.dataset.marqueeStyle = normalized.marqueeStyle.shape;
   root.style.setProperty("--ys-radar-latency-max-ms", `${normalized.radarLatencyMaxMs}`);

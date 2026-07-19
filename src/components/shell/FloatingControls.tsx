@@ -30,6 +30,8 @@ import {
 import {
   CARD_LAYOUT_PRESETS,
   CARD_STYLE_PRESETS,
+  CORE_SHAPE_PRESETS,
+  CORE_TUNING_CONTROLS,
   DASHBOARD_STYLE_PRESETS,
   DASHBOARD_TUNING_CONTROLS,
   GAUGE_STYLE_PRESETS,
@@ -42,6 +44,7 @@ import {
   RADAR_LATENCY_MAX_STEP_MS,
   VISUAL_COLOR_CONTROLS,
   normalizeVisualStyleSettings,
+  patchCoreDashboardSetting,
   patchLiquidDashboardSetting,
   patchDashboardSetting,
   useVisualStyle,
@@ -837,6 +840,90 @@ export function FloatingControls() {
                                 onChange={(event) =>
                                   updateVisualStyle({
                                     dashboardSettings: patchLiquidDashboardSetting(
+                                      visualStyle.dashboardSettings,
+                                      key,
+                                      Number(event.target.value),
+                                    ),
+                                  })
+                                }
+                              />
+                            </label>
+                          );
+                        })}
+                      </>
+                    ) : visualStyle.dashboardStyle === "core" ? (
+                      <>
+                        <div className="visual-style-section-title">核心形态</div>
+                        <div className="visual-style-preset-list is-core-shape">
+                          {CORE_SHAPE_PRESETS.map((preset) => (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              className="visual-style-preset"
+                              data-active={
+                                visualStyle.dashboardSettings.core.shape === preset.id
+                                  ? "true"
+                                  : "false"
+                              }
+                              onClick={() =>
+                                updateVisualStyle({
+                                  dashboardSettings: patchCoreDashboardSetting(
+                                    visualStyle.dashboardSettings,
+                                    "shape",
+                                    preset.id,
+                                  ),
+                                })
+                              }
+                            >
+                              <span className="visual-style-preset-name">
+                                {preset.label}
+                              </span>
+                              <span className="visual-style-preset-copy">
+                                {preset.description}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="visual-style-section-title">核心细节</div>
+                        <label className="gradient-range-control">
+                          <span>
+                            <span>延迟上限</span>
+                            <strong>{visualStyle.radarLatencyMaxMs}ms</strong>
+                          </span>
+                          <input
+                            type="range"
+                            min={RADAR_LATENCY_MAX_MIN_MS}
+                            max={RADAR_LATENCY_MAX_MAX_MS}
+                            step={RADAR_LATENCY_MAX_STEP_MS}
+                            value={visualStyle.radarLatencyMaxMs}
+                            onChange={(event) =>
+                              updateVisualStyle({
+                                radarLatencyMaxMs: Number(event.target.value),
+                              })
+                            }
+                          />
+                        </label>
+                        {CORE_TUNING_CONTROLS.map(({ key, label, max = 100 }) => {
+                          const value = Number(
+                            visualStyle.dashboardSettings.core[
+                              key as keyof typeof visualStyle.dashboardSettings.core
+                            ],
+                          );
+
+                          return (
+                            <label key={key} className="gradient-range-control">
+                              <span>
+                                <span>{label}</span>
+                                <strong>{value}%</strong>
+                              </span>
+                              <input
+                                type="range"
+                                min={0}
+                                max={max}
+                                value={value}
+                                onChange={(event) =>
+                                  updateVisualStyle({
+                                    dashboardSettings: patchCoreDashboardSetting(
                                       visualStyle.dashboardSettings,
                                       key,
                                       Number(event.target.value),

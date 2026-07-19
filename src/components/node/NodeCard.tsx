@@ -44,6 +44,7 @@ import { MetricBar } from "./MetricBar";
 import { MiniBars } from "./MiniBars";
 import { QualityBars } from "./QualityBars";
 import { CanvasStrip } from "./CanvasStrip";
+import { StatusCorePanel } from "./StatusCorePanel";
 import {
   drawMarqueeStrip,
   getMarqueeFrameInterval,
@@ -71,6 +72,7 @@ import {
   formatLatencyBucketSummary,
   formatLossBucketSummary,
   getGlowStyle,
+  gaugeHeadPoint,
   getLiquidMotionMs,
   getProgressStyle,
   getRadarScanDelay,
@@ -436,7 +438,28 @@ export const NodeCard = memo(function NodeCard({
           </Link>
         </header>
 
-        {dashboardStyle === "liquid" ? (
+        {dashboardStyle === "core" ? (
+          <StatusCorePanel
+            settings={dashboardSettings.core}
+            cpuPct={node.cpuPct}
+            cpuCores={node.cpu_cores}
+            ramPct={node.ramPct}
+            ramUsed={node.ramUsed}
+            ramTotal={node.ramTotal}
+            diskPct={node.diskPct}
+            diskUsed={node.diskUsed}
+            diskTotal={node.diskTotal}
+            loadValue={node.load1}
+            loadFraction={loadFraction}
+            upRate={upRate}
+            downRate={downRate}
+            latency={ping.lastValue}
+            latencyMaxMs={radarLatencyMaxMs}
+            loss={ping.loss}
+            hasHomepagePingBinding={hasHomepagePingBinding}
+            showPingMetrics={showPingMetrics}
+          />
+        ) : dashboardStyle === "liquid" ? (
           <LiquidMetricPanel
             settings={dashboardSettings.liquid}
             cpuPct={node.cpuPct}
@@ -567,7 +590,10 @@ export const NodeCard = memo(function NodeCard({
 
             {showPingMetrics && (
               <div className="card-metric-section card-metric-divided server-health-grid">
-                <div className="server-health-block">
+                <div
+                  className="server-health-block"
+                  style={{ "--health-color": latencyTone } as CSSProperties}
+                >
                   <div className="server-health-head">
                     <div className="server-health-label">
                       <Clock3 size={13} strokeWidth={2} />
@@ -616,7 +642,10 @@ export const NodeCard = memo(function NodeCard({
                     )}
                   </div>
                 </div>
-                <div className="server-health-block">
+                <div
+                  className="server-health-block"
+                  style={{ "--health-color": lossTone } as CSSProperties}
+                >
                   <div className="server-health-head">
                     <div className="server-health-label">
                       <Unplug size={13} strokeWidth={2} />
@@ -1236,6 +1265,7 @@ function LiquidGauge({
       style={
         {
           "--liquid-color": color,
+          "--liquid-percent": rawPercent,
           "--liquid-fill-y": fillY.toFixed(2),
           "--liquid-wave-ms": `${motionMs}ms`,
           "--liquid-sweep-ms": `${Math.round(motionMs * 1.9)}ms`,
@@ -1254,61 +1284,76 @@ function LiquidGauge({
       title={title}
     >
       <div className="liquid-gauge-head">
-        <span className="liquid-gauge-icon">{icon}</span>
-        <span>{label}</span>
+        <span className="liquid-gauge-label">
+          <span className="liquid-gauge-icon">{icon}</span>
+          <span>{label}</span>
+        </span>
+        <span className="liquid-gauge-status-dot" aria-hidden />
       </div>
-      <svg className="liquid-gauge-svg" viewBox="0 0 100 100" aria-hidden>
-        <defs>
-          <linearGradient id={liquidGradientId} x1="20%" y1="0%" x2="82%" y2="100%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.35" />
-            <stop offset="32%" stopColor="var(--liquid-color)" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="var(--liquid-color)" stopOpacity="0.52" />
-          </linearGradient>
-          <linearGradient id={waveGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="var(--liquid-color)" stopOpacity="0.78" />
-            <stop offset="48%" stopColor="white" stopOpacity="0.52" />
-            <stop offset="100%" stopColor="var(--liquid-color)" stopOpacity="0.88" />
-          </linearGradient>
-          <clipPath id={clipId}>
-            {renderLiquidShape(shape, "liquid-gauge-clip")}
-          </clipPath>
-        </defs>
-        {renderLiquidContainerFrame(shape)}
-        {renderLiquidShape(shape, "liquid-gauge-vessel")}
-        <g clipPath={`url(#${clipId})`}>
-          <rect
-            className="liquid-gauge-fill"
-            x="-12"
-            y={fillY}
-            width="124"
-            height={Math.max(0, 110 - fillY)}
-            fill={`url(#${liquidGradientId})`}
-          />
-          <path className="liquid-gauge-wave" d={wavePath} fill={`url(#${waveGradientId})`} />
-          <ellipse
-            className="liquid-gauge-surface"
-            cx="50"
-            cy={fillY}
-            rx={surface.rx}
-            ry={surface.ry}
-          />
-          <circle className="liquid-gauge-bubble is-one" cx="68" cy={Math.max(18, fillY + 16)} r="2.5" />
-        </g>
-        {shape === "segmented" && (
-          <g className="liquid-gauge-segments">
-            {[24, 36, 48, 60, 72].map((x) => (
-              <line key={x} x1={x} y1="28" x2={x} y2="72" />
-            ))}
+      <div className="liquid-gauge-stage">
+        <svg
+          className="liquid-gauge-svg"
+          viewBox="0 0 100 100"
+          preserveAspectRatio={
+            shape === "capsule" || shape === "segmented" || shape === "lens"
+              ? "none"
+              : "xMidYMid meet"
+          }
+          aria-hidden
+        >
+          <defs>
+            <linearGradient id={liquidGradientId} x1="18%" y1="0%" x2="84%" y2="100%">
+              <stop offset="0%" stopColor="white" stopOpacity="0.56" />
+              <stop offset="24%" stopColor="var(--liquid-color)" stopOpacity="0.98" />
+              <stop offset="72%" stopColor="var(--liquid-color)" stopOpacity="0.76" />
+              <stop offset="100%" stopColor="var(--liquid-color)" stopOpacity="0.94" />
+            </linearGradient>
+            <linearGradient id={waveGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="var(--liquid-color)" stopOpacity="0.9" />
+              <stop offset="48%" stopColor="white" stopOpacity="0.72" />
+              <stop offset="100%" stopColor="var(--liquid-color)" stopOpacity="0.96" />
+            </linearGradient>
+            <clipPath id={clipId}>
+              {renderLiquidShape(shape, "liquid-gauge-clip")}
+            </clipPath>
+          </defs>
+          {renderLiquidContainerFrame(shape)}
+          {renderLiquidShape(shape, "liquid-gauge-vessel")}
+          <g clipPath={`url(#${clipId})`}>
+            <rect
+              className="liquid-gauge-fill"
+              x="-12"
+              y={fillY}
+              width="124"
+              height={Math.max(0, 110 - fillY)}
+              fill={`url(#${liquidGradientId})`}
+            />
+            <path className="liquid-gauge-wave" d={wavePath} fill={`url(#${waveGradientId})`} />
+            <ellipse
+              className="liquid-gauge-surface"
+              cx="50"
+              cy={fillY}
+              rx={surface.rx}
+              ry={surface.ry}
+            />
+            <circle className="liquid-gauge-bubble is-one" cx="68" cy={Math.max(18, fillY + 16)} r="2.5" />
           </g>
-        )}
-        {renderLiquidTechArt(shape, rawPercent)}
-        {shape === "ring" && <circle className="liquid-gauge-ring-core" cx="50" cy="50" r="22" />}
-        {renderLiquidShape(shape, "liquid-gauge-glass")}
-        {renderLiquidShine(shape)}
-      </svg>
-      <div className="liquid-gauge-value tabular">
-        <span>{rawPercent}</span>
-        <span className="liquid-gauge-unit">%</span>
+          {shape === "segmented" && (
+            <g className="liquid-gauge-segments">
+              {[24, 36, 48, 60, 72].map((x) => (
+                <line key={x} x1={x} y1="28" x2={x} y2="72" />
+              ))}
+            </g>
+          )}
+          {renderLiquidTechArt(shape, rawPercent)}
+          {shape === "ring" && <circle className="liquid-gauge-ring-core" cx="50" cy="50" r="22" />}
+          {renderLiquidShape(shape, "liquid-gauge-glass")}
+          {renderLiquidShine(shape)}
+        </svg>
+        <div className="liquid-gauge-value tabular">
+          <span>{rawPercent}</span>
+          <span className="liquid-gauge-unit">%</span>
+        </div>
       </div>
       <div className="liquid-gauge-foot">
         <span>{realValue}</span>
@@ -1477,6 +1522,30 @@ function RadarMetricPanel({
   );
 }
 
+function buildDialTickPaths() {
+  let minor = "";
+  let major = "";
+
+  for (let index = 0; index <= 10; index += 1) {
+    const angle = Math.PI - (Math.PI * index) / 10;
+    const isMajor = index === 0 || index === 5 || index === 10;
+    const innerRadius = isMajor ? 34 : 38;
+    const outerRadius = 44;
+    const x1 = 60 + Math.cos(angle) * innerRadius;
+    const y1 = 58 - Math.sin(angle) * innerRadius;
+    const x2 = 60 + Math.cos(angle) * outerRadius;
+    const y2 = 58 - Math.sin(angle) * outerRadius;
+    const segment = `M ${x1.toFixed(2)} ${y1.toFixed(2)} L ${x2.toFixed(2)} ${y2.toFixed(2)} `;
+
+    if (isMajor) major += segment;
+    else minor += segment;
+  }
+
+  return { minor, major };
+}
+
+const DIAL_TICK_PATHS = buildDialTickPaths();
+
 function RadarGauge({
   variant,
   gaugeStyle,
@@ -1512,12 +1581,34 @@ function RadarGauge({
   const glowStyle = getGlowStyle(percent, gaugeStyle);
   const segmentTrackStyle = getSegmentTrackStyle(gaugeStyle);
   const segmentTickStyle = getSegmentTickStyle(gaugeStyle);
+  const gaugeId = useId().replace(/:/g, "");
+  const progressGradientId = `${gaugeId}-progress`;
+  const glowGradientId = `${gaugeId}-glow`;
+  const headPoint = gaugeHeadPoint(variant, percent);
+  const level = empty
+    ? "empty"
+    : percent >= 90
+      ? "critical"
+      : percent >= 70
+        ? "high"
+        : percent <= 20
+          ? "low"
+          : "normal";
+  const progressStrokeStyle = {
+    ...progressStyle,
+    stroke: `url(#${progressGradientId})`,
+  } as CSSProperties;
+  const glowStrokeStyle = {
+    ...glowStyle,
+    stroke: `url(#${glowGradientId})`,
+  } as CSSProperties;
 
   return (
     <div
       className={clsx("radar-gauge", empty && "is-empty")}
       data-variant={variant}
       data-gauge-style={gaugeStyle}
+      data-level={level}
       style={
         {
           "--radar-color": color,
@@ -1529,102 +1620,135 @@ function RadarGauge({
       title={title}
     >
       <div className="radar-gauge-head">
-        <span className="radar-gauge-icon">{icon}</span>
-        <span>{label}</span>
+        <span className="radar-gauge-label">
+          <span className="radar-gauge-icon">{icon}</span>
+          <span>{label}</span>
+        </span>
+        <span className="radar-gauge-status-dot" aria-hidden />
       </div>
-      {variant === "ring" ? (
-        <svg className="radar-gauge-svg is-ring" viewBox="0 0 100 100" aria-hidden>
-          <circle
-            className="radar-gauge-track"
-            cx="50"
-            cy="50"
-            r="38"
-            pathLength={100}
-            style={segmentTrackStyle}
-          />
-          {segmentTickStyle && (
+      <div className="radar-gauge-stage">
+        {variant === "ring" ? (
+          <svg className="radar-gauge-svg is-ring" viewBox="0 0 100 100" aria-hidden>
+            <defs>
+              <linearGradient id={progressGradientId} x1="12" y1="14" x2="88" y2="86" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="var(--radar-color)" stopOpacity="0.42" />
+                <stop offset="68%" stopColor="var(--radar-color)" stopOpacity="1" />
+                <stop offset="100%" stopColor="white" stopOpacity="0.92" />
+              </linearGradient>
+              <linearGradient id={glowGradientId} x1="8" y1="10" x2="92" y2="90" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="var(--radar-color)" stopOpacity="0.18" />
+                <stop offset="78%" stopColor="var(--radar-color)" stopOpacity="0.92" />
+                <stop offset="100%" stopColor="white" stopOpacity="0.64" />
+              </linearGradient>
+            </defs>
+            <circle className="radar-gauge-inner-disc" cx="50" cy="50" r="28" />
+            <circle className="radar-gauge-inner-grid" cx="50" cy="50" r="21" pathLength={100} />
             <circle
-              className="radar-gauge-segment-ticks"
+              className="radar-gauge-track"
               cx="50"
               cy="50"
               r="38"
               pathLength={100}
-              style={segmentTickStyle}
+              style={segmentTrackStyle}
             />
-          )}
-          {renderGaugeBackArt(variant, gaugeStyle, percent)}
-          <circle
-            className="radar-gauge-fill"
-            cx="50"
-            cy="50"
-            r="38"
-            pathLength={100}
-            style={progressStyle}
-          />
-          <circle
-            className="radar-gauge-glow"
-            cx="50"
-            cy="50"
-            r="38"
-            pathLength={100}
-            style={glowStyle}
-          />
-          {renderGaugeFrontArt(variant, gaugeStyle, percent)}
-        </svg>
-      ) : (
-        <svg className="radar-gauge-svg" viewBox="0 0 120 72" aria-hidden>
-          <path
-            className="radar-gauge-track"
-            d="M 14 58 A 46 46 0 0 1 106 58"
-            pathLength={100}
-            style={segmentTrackStyle}
-          />
-          {segmentTickStyle && (
+            {segmentTickStyle && (
+              <circle
+                className="radar-gauge-segment-ticks"
+                cx="50"
+                cy="50"
+                r="38"
+                pathLength={100}
+                style={segmentTickStyle}
+              />
+            )}
+            {renderGaugeBackArt(variant, gaugeStyle, percent)}
+            <circle
+              className="radar-gauge-fill"
+              cx="50"
+              cy="50"
+              r="38"
+              pathLength={100}
+              style={progressStrokeStyle}
+            />
+            <circle
+              className="radar-gauge-glow"
+              cx="50"
+              cy="50"
+              r="38"
+              pathLength={100}
+              style={glowStrokeStyle}
+            />
+            <circle className="radar-gauge-terminal" cx={headPoint.x} cy={headPoint.y} r="2.8" />
+            {renderGaugeFrontArt(variant, gaugeStyle, percent)}
+          </svg>
+        ) : (
+          <svg className="radar-gauge-svg" viewBox="0 0 120 72" aria-hidden>
+            <defs>
+              <linearGradient id={progressGradientId} x1="14" y1="58" x2="106" y2="18" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="var(--radar-color)" stopOpacity="0.42" />
+                <stop offset="72%" stopColor="var(--radar-color)" stopOpacity="1" />
+                <stop offset="100%" stopColor="white" stopOpacity="0.92" />
+              </linearGradient>
+              <linearGradient id={glowGradientId} x1="14" y1="58" x2="106" y2="18" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="var(--radar-color)" stopOpacity="0.16" />
+                <stop offset="80%" stopColor="var(--radar-color)" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="white" stopOpacity="0.62" />
+              </linearGradient>
+            </defs>
+            <path className="radar-gauge-inner-face" d="M 22 58 A 38 38 0 0 1 98 58 L 90 58 A 30 30 0 0 0 30 58 Z" />
+            <line className="radar-gauge-baseline" x1="23" y1="58" x2="97" y2="58" />
             <path
-              className="radar-gauge-segment-ticks"
+              className="radar-gauge-track"
               d="M 14 58 A 46 46 0 0 1 106 58"
               pathLength={100}
-              style={segmentTickStyle}
+              style={segmentTrackStyle}
             />
-          )}
-          {renderGaugeBackArt(variant, gaugeStyle, percent)}
-          <path
-            className="radar-gauge-fill"
-            d="M 14 58 A 46 46 0 0 1 106 58"
-            pathLength={100}
-            style={progressStyle}
-          />
-          <path
-            className="radar-gauge-glow"
-            d="M 14 58 A 46 46 0 0 1 106 58"
-            pathLength={100}
-            style={glowStyle}
-          />
-          {renderGaugeFrontArt(variant, gaugeStyle, percent)}
-          {variant === "dial" && (
-            <>
-              <g className="radar-gauge-ticks">
-                <line x1="22" y1="58" x2="30" y2="52" />
-                <line x1="36" y1="34" x2="42" y2="41" />
-                <line x1="60" y1="18" x2="60" y2="28" />
-                <line x1="84" y1="34" x2="78" y2="41" />
-                <line x1="98" y1="58" x2="90" y2="52" />
-              </g>
-              <line
-                className="radar-gauge-needle"
-                x1="60"
-                y1="58"
-                x2="60"
-                y2="22"
+            {segmentTickStyle && (
+              <path
+                className="radar-gauge-segment-ticks"
+                d="M 14 58 A 46 46 0 0 1 106 58"
+                pathLength={100}
+                style={segmentTickStyle}
               />
-              <circle className="radar-gauge-pivot" cx="60" cy="58" r="4.3" />
-            </>
-          )}
-        </svg>
-      )}
-      <div className="radar-gauge-value tabular">
-        <span>{percent}</span>
-        <span className="radar-gauge-unit">%</span>
+            )}
+            {renderGaugeBackArt(variant, gaugeStyle, percent)}
+            <path
+              className="radar-gauge-fill"
+              d="M 14 58 A 46 46 0 0 1 106 58"
+              pathLength={100}
+              style={progressStrokeStyle}
+            />
+            <path
+              className="radar-gauge-glow"
+              d="M 14 58 A 46 46 0 0 1 106 58"
+              pathLength={100}
+              style={glowStrokeStyle}
+            />
+            <circle className="radar-gauge-terminal" cx={headPoint.x} cy={headPoint.y} r="2.8" />
+            {renderGaugeFrontArt(variant, gaugeStyle, percent)}
+            {variant === "dial" && (
+              <>
+                <g className="radar-gauge-ticks">
+                  <path d={DIAL_TICK_PATHS.minor} />
+                  <path className="is-major" d={DIAL_TICK_PATHS.major} />
+                </g>
+                <line
+                  className="radar-gauge-needle"
+                  x1="60"
+                  y1="58"
+                  x2="60"
+                  y2="20"
+                />
+                <circle className="radar-gauge-pivot-ring" cx="60" cy="58" r="6.7" />
+                <circle className="radar-gauge-pivot" cx="60" cy="58" r="4.1" />
+              </>
+            )}
+          </svg>
+        )}
+        <div className="radar-gauge-value tabular">
+          <span>{percent}</span>
+          <span className="radar-gauge-unit">%</span>
+        </div>
       </div>
       <div className="radar-gauge-foot">
         <span>{realValue}</span>
@@ -1767,7 +1891,10 @@ function TrafficStat({
   icon: ReactNode;
 }) {
   return (
-    <div className="traffic-stat">
+    <div
+      className="traffic-stat"
+      style={{ "--metric-color": color } as CSSProperties}
+    >
       <div className="traffic-stat-head">
         <div className="traffic-stat-label" style={{ color }}>
           {icon}
