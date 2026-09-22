@@ -14,9 +14,11 @@ import {
   RefreshCw,
   ShieldCheck,
   ShieldQuestion,
+  Sparkles,
   WalletCards,
 } from "lucide-react";
 import { maskIpAddress } from "@/adapters/static-ip-adapter";
+import { ipQualityGrade } from "@/adapters/ip-quality-adapter";
 import type { NetworkAssetSettings } from "@/config/network";
 import type { StaticIpNode } from "@/types/network";
 import { Flag } from "@/components/ui/Flag";
@@ -100,6 +102,8 @@ export const StaticIpCard = memo(function StaticIpCard({
   const displayIpv4 = settings.maskStaticIp ? maskIpAddress(node.ipv4) : (node.ipv4 ?? "--");
   const displayIpv6 = settings.maskStaticIp ? maskIpAddress(node.ipv6) : (node.ipv6 ?? "--");
   const unlockEntries = Object.entries(node.unlock ?? {});
+  const grade = ipQualityGrade(node.quality?.score);
+  const qualitySources = node.quality?.sources.map((source) => source.toUpperCase()).join(" + ");
 
   return (
     <article className="server-card static-ip-card" data-status={node.status}>
@@ -118,6 +122,24 @@ export const StaticIpCard = memo(function StaticIpCard({
             </div>
           </div>
         </header>
+
+        {node.quality && (
+          <div className="static-ip-quality" data-tone={grade.tone}>
+            <div className="static-ip-quality-ring" style={{ "--quality": node.quality.score ?? 0 } as React.CSSProperties}>
+              <strong>{node.quality.score ?? "--"}</strong><small>/100</small>
+            </div>
+            <div className="static-ip-quality-copy">
+              <span><Sparkles size={12} /> IP Quality</span>
+              <strong>{grade.label}</strong>
+              <small>{qualitySources || "LOCAL"}{node.quality.stale ? " · stale" : ""}</small>
+            </div>
+            <div className="static-ip-quality-risk">
+              <small>REPUTATION RISK</small>
+              <strong>{node.quality.reputationRiskScore ?? "--"}</strong>
+              <span>higher is riskier</span>
+            </div>
+          </div>
+        )}
 
         <div className="static-ip-section static-ip-identity-grid">
           <Field icon={<Globe2 size={14} />} label="IPv4" value={displayIpv4} />
@@ -145,6 +167,9 @@ export const StaticIpCard = memo(function StaticIpCard({
           <Field icon={<ShieldCheck size={14} />} label="Proxy" value={booleanLabel(node.proxyDetected)} />
           <Field icon={<ShieldCheck size={14} />} label="Hosting" value={booleanLabel(node.hostingDetected)} />
           <Field icon={<ShieldCheck size={14} />} label="VPN" value={booleanLabel(node.vpnDetected)} />
+          <Field icon={<ShieldCheck size={14} />} label="Tor" value={booleanLabel(node.quality?.torDetected)} />
+          <Field icon={<ShieldCheck size={14} />} label="Residential Proxy" value={booleanLabel(node.quality?.residentialProxyDetected)} />
+          <Field icon={<ShieldCheck size={14} />} label="Recent Abuse" value={booleanLabel(node.quality?.recentAbuse)} />
         </div>
 
         {settings.showUnlockStatus && unlockEntries.length > 0 && (
@@ -182,6 +207,9 @@ export const StaticIpCard = memo(function StaticIpCard({
 
         <footer className="server-card-footer static-ip-footer">
           <Field icon={<Clock3 size={14} />} label="Last Check" value={relativeTime(node.updatedAt)} />
+          {node.quality?.checkedAt && (
+            <Field icon={<ShieldCheck size={14} />} label="Reputation Check" value={relativeTime(node.quality.checkedAt)} />
+          )}
           {settings.showMonthlyPrice && (
             <Field icon={<WalletCards size={14} />} label="Price" value={price(node)} />
           )}

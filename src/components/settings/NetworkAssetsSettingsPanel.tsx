@@ -107,7 +107,7 @@ export function NetworkAssetsSettingsPanel({
             onChange={(event) => onChange({ ...settings, staticIpApiUrl: event.target.value })}
             onBlur={() => update({ staticIpApiUrl: settings.staticIpApiUrl })}
           />
-          <small>只保存无凭证 URL；API key/密码必须保留在服务端。</small>
+          <small>支持 IPQS、IPinfo、AbuseIPDB、MaxMind 的服务端聚合结果；API key/密码必须保留在服务端。</small>
         </label>
         <label className="network-settings-field">
           <span>刷新间隔（秒）</span>

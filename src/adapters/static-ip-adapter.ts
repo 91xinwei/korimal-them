@@ -7,6 +7,7 @@ import type {
   StaticIpProtocol,
   StaticIpUnlock,
 } from "@/types/network";
+import { adaptIpQuality } from "@/adapters/ip-quality-adapter";
 
 export interface StaticIpAdapter<TRaw = unknown> {
   adapt(value: TRaw, thresholds: NetworkThresholds, now?: number): StaticIpNode | null;
@@ -39,6 +40,12 @@ const RawStaticIpNodeSchema = z
     packetLoss: optionalNumber,
     availability: optionalNumber,
     riskScore: optionalNumber,
+    qualityScore: optionalNumber,
+    quality: z.record(z.string(), z.unknown()).nullish(),
+    ipqs: z.record(z.string(), z.unknown()).nullish(),
+    ipinfo: z.record(z.string(), z.unknown()).nullish(),
+    abuseipdb: z.record(z.string(), z.unknown()).nullish(),
+    maxmind: z.record(z.string(), z.unknown()).nullish(),
     proxyDetected: optionalBoolean,
     hostingDetected: optionalBoolean,
     vpnDetected: optionalBoolean,
@@ -134,6 +141,21 @@ export function adaptStaticIpNode(
   const packetLoss = numberValue(raw.packetLoss, 0, 100);
   const riskScore = numberValue(raw.riskScore, 0, 100);
   const updatedAt = text(raw.updatedAt);
+  const quality = adaptIpQuality({
+    quality: raw.quality,
+    ipqs: raw.ipqs,
+    ipinfo: raw.ipinfo,
+    abuseipdb: raw.abuseipdb,
+    maxmind: raw.maxmind,
+    qualityScore: raw.qualityScore,
+    riskScore,
+    latency,
+    packetLoss,
+    availability: raw.availability,
+    proxyDetected: raw.proxyDetected,
+    hostingDetected: raw.hostingDetected,
+    vpnDetected: raw.vpnDetected,
+  });
 
   return {
     id,
@@ -166,10 +188,11 @@ export function adaptStaticIpNode(
     ipCategory: category(raw.ipCategory),
     protocol: protocol(raw.protocol),
     availability: numberValue(raw.availability, 0, 100),
-    riskScore,
-    proxyDetected: booleanValue(raw.proxyDetected),
-    hostingDetected: booleanValue(raw.hostingDetected),
-    vpnDetected: booleanValue(raw.vpnDetected),
+    riskScore: quality?.reputationRiskScore ?? riskScore,
+    proxyDetected: quality?.proxyDetected ?? booleanValue(raw.proxyDetected),
+    hostingDetected: quality?.hostingDetected ?? booleanValue(raw.hostingDetected),
+    vpnDetected: quality?.vpnDetected ?? booleanValue(raw.vpnDetected),
+    quality,
     unlock: unlock(raw.unlock),
     subscriptionStartedAt: dateTimeValue(raw.subscriptionStartedAt),
     subscriptionExpiresAt: dateTimeValue(raw.subscriptionExpiresAt),

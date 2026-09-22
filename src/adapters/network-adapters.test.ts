@@ -50,6 +50,30 @@ describe("StaticIpAdapter", () => {
       disney: null,
       youtubePremium: null,
     });
+    expect(node?.quality).toMatchObject({ score: 91, reputationRiskScore: 12, provider: "local" });
+  });
+
+  it("normalizes popular IP reputation providers without exposing vendor fields", () => {
+    const node = adaptStaticIpNode({
+      id: "quality-1",
+      name: "Quality IP",
+      latency: 80,
+      packetLoss: 1,
+      availability: 99.9,
+      ipqs: { fraud_score: 21, proxy: false, vpn: false, tor: false, recent_abuse: true, connection_type: "Residential" },
+      ipinfo: { privacy: { hosting: false, residential: true } },
+      abuseipdb: { data: { abuseConfidenceScore: 7, lastReportedAt: "2026-09-20T00:00:00Z" } },
+    }, DEFAULT_THRESHOLDS);
+    expect(node?.quality).toMatchObject({
+      provider: "composite",
+      sources: ["ipqs", "ipinfo", "abuseipdb"],
+      reputationRiskScore: 21,
+      fraudScore: 21,
+      abuseConfidenceScore: 7,
+      recentAbuse: true,
+      residentialProxyDetected: true,
+    });
+    expect(node?.quality?.score).toBeGreaterThan(70);
   });
 
   it("rejects missing identity and tolerates malformed optional fields", () => {

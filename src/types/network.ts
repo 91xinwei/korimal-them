@@ -69,6 +69,37 @@ export interface StaticIpUnlock {
   youtubePremium?: boolean | null;
 }
 
+export type IpQualityProvider =
+  | "ipqs"
+  | "ipinfo"
+  | "abuseipdb"
+  | "maxmind"
+  | "composite"
+  | "local"
+  | "unknown";
+
+export interface StaticIpQuality {
+  /** Composite quality, 0-100. Higher is better. */
+  score?: number;
+  /** Reputation risk, 0-100. Higher is more dangerous. */
+  reputationRiskScore?: number;
+  fraudScore?: number;
+  abuseConfidenceScore?: number;
+  provider: IpQualityProvider;
+  sources: IpQualityProvider[];
+  checkedAt?: string;
+  stale?: boolean;
+  proxyDetected?: boolean;
+  hostingDetected?: boolean;
+  vpnDetected?: boolean;
+  torDetected?: boolean;
+  residentialProxyDetected?: boolean;
+  botDetected?: boolean;
+  recentAbuse?: boolean;
+  abuseVelocity?: string;
+  connectionType?: string;
+}
+
 export interface StaticIpNode extends BaseNode {
   type: "static";
   isp?: string;
@@ -80,6 +111,7 @@ export interface StaticIpNode extends BaseNode {
   proxyDetected?: boolean;
   hostingDetected?: boolean;
   vpnDetected?: boolean;
+  quality?: StaticIpQuality;
   unlock?: StaticIpUnlock;
   subscriptionStartedAt?: string;
   subscriptionExpiresAt?: string;

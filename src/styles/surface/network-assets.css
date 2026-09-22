@@ -408,6 +408,19 @@
 .static-ip-card[data-status="offline"] { opacity: 0.72; filter: saturate(0.7); }
 .static-ip-card[data-status="warning"]::before { background: linear-gradient(90deg, #f97316, transparent 74%); opacity: 0.7; }
 .static-ip-header { align-items: flex-start; }
+.static-ip-quality { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 12px 0 0; padding: 12px; overflow: hidden; border: 1px solid color-mix(in srgb, #22d3ee 24%, var(--hairline)); border-radius: 12px; background: radial-gradient(circle at 12% 50%, color-mix(in srgb, #22d3ee 13%, transparent), transparent 44%), linear-gradient(135deg, color-mix(in srgb, var(--surface-sunken) 94%, transparent), color-mix(in srgb, #0ea5e9 5%, var(--surface))); }
+.static-ip-quality-ring { --quality: 0; display: grid; width: 58px; height: 58px; place-content: center; border-radius: 50%; background: radial-gradient(circle, var(--surface) 57%, transparent 59%), conic-gradient(#22d3ee calc(var(--quality) * 1%), color-mix(in srgb, var(--text-tertiary) 13%, transparent) 0); box-shadow: 0 0 18px color-mix(in srgb, #22d3ee 16%, transparent); color: #06b6d4; text-align: center; }
+.static-ip-quality-ring strong { font-size: 16px; font-variant-numeric: tabular-nums; line-height: 1; }
+.static-ip-quality-ring small { color: var(--text-tertiary); font-size: 7px; }
+.static-ip-quality-copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.static-ip-quality-copy > span { display: flex; align-items: center; gap: 4px; color: #06b6d4; font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.static-ip-quality-copy strong { color: var(--text-primary); font-size: 14px; }
+.static-ip-quality-copy small { overflow: hidden; color: var(--text-tertiary); font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.static-ip-quality-risk { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; text-align: right; }
+.static-ip-quality-risk small, .static-ip-quality-risk span { color: var(--text-tertiary); font-size: 6px; letter-spacing: .04em; }
+.static-ip-quality-risk strong { color: #f59e0b; font-size: 17px; font-variant-numeric: tabular-nums; }
+.static-ip-quality[data-tone="excellent"] .static-ip-quality-ring { color: #10b981; background: radial-gradient(circle, var(--surface) 57%, transparent 59%), conic-gradient(#10b981 calc(var(--quality) * 1%), color-mix(in srgb, var(--text-tertiary) 13%, transparent) 0); }
+.static-ip-quality[data-tone="poor"] .static-ip-quality-ring { color: #ef4444; background: radial-gradient(circle, var(--surface) 57%, transparent 59%), conic-gradient(#ef4444 calc(var(--quality) * 1%), color-mix(in srgb, var(--text-tertiary) 13%, transparent) 0); }
 .static-ip-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .static-ip-badges span { padding: 3px 6px; border: 1px solid var(--hairline); border-radius: 6px; background: var(--surface-sunken); color: var(--text-tertiary); font-size: 8px; font-weight: 740; letter-spacing: .035em; }
 .static-ip-badges span[data-kind="static"] { border-color: color-mix(in srgb, #10b981 30%, var(--border)); background: color-mix(in srgb, #10b981 9%, var(--surface)); color: #10b981; }
