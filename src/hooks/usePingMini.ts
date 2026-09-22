@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { useVisibleNodeUuids } from "@/hooks/useNode";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
-import { getPingOverview } from "@/services/api";
+import { getNodesLatestStatus, getPingOverview } from "@/services/api";
 import type { PingOverviewBucket, PingOverviewItem, PingTask } from "@/types/komari";
 import {
   invertHomepagePingTaskBindings,
@@ -40,6 +40,81 @@ export interface PingMiniSeries extends PingOverviewItem {
   taskName: string;
   taskTarget: string;
   taskType: string;
+}
+
+function finiteNumber(value: unknown): number | null {
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/** Normalize the official common:getNodesLatestStatus[uuid].ping map. */
+export function normalizeLatestPingSeries(
+  uuid: string,
+  latestStatus: unknown,
+): PingMiniSeries[] {
+  const status = recordValue(latestStatus);
+  const ping = recordValue(status.ping);
+  const result: PingMiniSeries[] = [];
+
+  for (const [taskKey, raw] of Object.entries(ping)) {
+    const taskId = Number(taskKey);
+    if (!Number.isInteger(taskId) || taskId <= 0) continue;
+    const stat = recordValue(raw);
+    const latest = finiteNumber(stat.latest);
+    const average = finiteNumber(stat.avg);
+    const loss = finiteNumber(stat.loss);
+    const minimum = finiteNumber(stat.min);
+    const maximum = finiteNumber(stat.max);
+    const lastValue = latest != null && latest >= 0
+      ? latest
+      : average != null && average >= 0
+        ? average
+        : null;
+
+    result.push({
+      client: uuid,
+      isAssigned: true,
+      lastValue,
+      values: [],
+      samples: [],
+      max: Math.max(1, maximum ?? lastValue ?? minimum ?? 1),
+      loss: loss == null ? null : Math.min(100, Math.max(0, loss)),
+      taskId,
+      taskName: typeof stat.name === "string" && stat.name.trim()
+        ? stat.name.trim()
+        : `任务 #${taskId}`,
+      taskTarget: "",
+      taskType: "icmp",
+    });
+  }
+
+  return result.sort((left, right) => left.taskId - right.taskId);
+}
+
+function mergeLatestSeries(
+  historical: PingMiniSeries[],
+  latest: PingMiniSeries[],
+) {
+  const merged = new Map(historical.map((item) => [item.taskId, item]));
+  for (const live of latest) {
+    const prior = merged.get(live.taskId);
+    merged.set(live.taskId, prior
+      ? {
+          ...prior,
+          taskName: live.taskName || prior.taskName,
+          lastValue: live.lastValue ?? prior.lastValue,
+          loss: live.loss ?? prior.loss,
+          max: Math.max(prior.max, live.max),
+        }
+      : live);
+  }
+  return [...merged.values()].sort((left, right) => left.taskId - right.taskId);
 }
 
 type Listener = () => void;
@@ -292,6 +367,13 @@ async function buildOverviewMap(
   const selectedTaskByClient = resolveSelectedTasks(normalizedUuids, bindings);
   const boundTaskIds = resolveBoundTaskIds(normalizedUuids, bindings);
   let automaticOverview: Awaited<ReturnType<typeof getPingOverview>> | null = null;
+  let latestStatuses: Record<string, unknown> = {};
+
+  try {
+    latestStatuses = await getNodesLatestStatus(normalizedUuids);
+  } catch {
+    // Historical Ping remains available on older Komari servers.
+  }
 
   try {
     automaticOverview = await getPingOverview(hours);
@@ -309,15 +391,6 @@ async function buildOverviewMap(
   const selectedTaskIds = Array.from(new Set([...selectedTaskByClient.values(), ...boundTaskIds])).sort(
     (left, right) => left - right,
   );
-
-  if (selectedTaskIds.length === 0) {
-    return {
-      assignmentKey: "",
-      intervalMs: DEFAULT_PING_REFRESH_INTERVAL,
-      items: new Map<string, PingOverviewItem>(),
-      series: new Map<string, PingMiniSeries[]>(),
-    };
-  }
 
   const itemsByTask = new Map<number, Map<string, PingOverviewItem>>();
   const series = new Map<string, PingMiniSeries[]>();
@@ -396,7 +469,6 @@ async function buildOverviewMap(
     const explicitlyBound = Object.entries(bindings)
       .filter(([, clients]) => clients.includes(uuid))
       .map(([taskId]) => Number(taskId));
-    const allowed = explicitlyBound.length > 0 ? new Set(explicitlyBound) : null;
     const entries = [...(series.get(uuid) ?? [])];
     for (const taskId of explicitlyBound) {
       if (entries.some((entry) => entry.taskId === taskId)) continue;
@@ -411,11 +483,18 @@ async function buildOverviewMap(
         taskType: task?.type || "icmp",
       });
     }
-    const visibleEntries = entries
-      .filter((entry) => !allowed || allowed.has(entry.taskId))
-      .sort((left, right) => left.taskId - right.taskId)
+    const visibleEntries = mergeLatestSeries(
+      entries,
+      normalizeLatestPingSeries(uuid, latestStatuses[uuid]),
+    )
       .slice(0, 6);
     if (visibleEntries.length > 0) normalizedSeries.set(uuid, visibleEntries);
+
+    const selectedTaskId = selectedTaskByClient.get(uuid);
+    const primary = selectedTaskId != null
+      ? visibleEntries.find((entry) => entry.taskId === selectedTaskId)
+      : visibleEntries[0];
+    if (primary && !items.has(uuid)) items.set(uuid, primary);
   }
 
   return {
@@ -479,7 +558,14 @@ function commitPingOverview(
     }
     const merged = incoming.map((next) => {
       const prior = previous.find((item) => item.taskId === next.taskId);
-      return next.samples.length === 0 && prior && prior.samples.length > 0 ? prior : next;
+      return next.samples.length === 0 && prior && prior.samples.length > 0
+        ? {
+            ...next,
+            values: prior.values,
+            samples: prior.samples,
+            max: Math.max(next.max, prior.max),
+          }
+        : next;
     });
     for (const prior of previous) {
       if (!merged.some((item) => item.taskId === prior.taskId)) merged.push(prior);
