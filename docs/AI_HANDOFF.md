@@ -301,7 +301,7 @@ npm run package
 发版前至少确认：
 
 1. `package.json`、`package-lock.json`、`komari-theme.json` 版本一致。
-2. `komari-theme.json.url` 必须是 `https://github.com/youshi01/Komari_theme`。
+2. `komari-theme.json.url` 必须指向当前维护仓库 `https://github.com/91xinwei/korimal-them`。
 3. `CHANGELOG.md` 顶部有当前版本更新内容。
 4. `npm run lint`、`npx tsc -p tsconfig.app.json --noEmit --pretty false`、`npm audit --audit-level=high`、`npm run build` 通过。
 5. `npm run package` 生成新的 zip，不能覆盖旧 zip。
