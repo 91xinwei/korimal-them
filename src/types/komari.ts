@@ -42,6 +42,8 @@ export const NodeInfoSchema = z
     os: looseString.default(""),
     kernel_version: looseString.default(""),
     gpu_name: looseString.default(""),
+    ipv4: looseString.default(""),
+    ipv6: looseString.default(""),
     mem_total: looseNumber.default(0),
     swap_total: looseNumber.default(0),
     disk_total: looseNumber.default(0),
@@ -73,6 +75,8 @@ export interface NodeInfo {
   os: string;
   kernel_version: string;
   gpu_name: string;
+  ipv4: string;
+  ipv6: string;
   mem_total: number;
   swap_total: number;
   disk_total: number;
@@ -197,6 +201,19 @@ export interface ThemeSettings {
   visualStyle?: unknown;
   siteTitle?: string;
   background?: ThemeBackgroundSettings;
+  showGlobalMap?: boolean;
+  showStaticIps?: boolean;
+  showRiskScore?: boolean;
+  showUnlockStatus?: boolean;
+  showMonthlyPrice?: boolean;
+  maskStaticIp?: boolean;
+  mapDefaultZoom?: number;
+  latencyWarningThreshold?: number;
+  packetLossWarningThreshold?: number;
+  riskWarningThreshold?: number;
+  staticStaleAfterSeconds?: number;
+  staticRefreshInterval?: number;
+  staticIpApiUrl?: string;
 }
 
 export interface ThemeBackgroundUpload {

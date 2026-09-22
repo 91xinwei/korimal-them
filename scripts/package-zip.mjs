@@ -11,9 +11,15 @@ const root = resolve(__dirname, "..");
 const manifest = JSON.parse(readFileSync(resolve(root, "komari-theme.json"), "utf8"));
 const version = manifest.version ?? "0.0.0";
 const short = manifest.short ?? "komari-theme-YS";
-const outPath = resolve(root, `${short}-v${version}.zip`);
+const outputIndex = process.argv.indexOf("--output");
+const requestedOutput = outputIndex >= 0 ? process.argv[outputIndex + 1] : undefined;
+if (outputIndex >= 0 && (!requestedOutput || requestedOutput.startsWith("-"))) {
+  throw new Error("--output requires a ZIP filename");
+}
+const outPath = resolve(root, requestedOutput ?? `${short}-v${version}.zip`);
+const force = process.argv.includes("--force");
 
-if (existsSync(outPath)) {
+if (existsSync(outPath) && !force) {
   throw new Error(`Package already exists: ${outPath}. Bump komari-theme.json version before packaging.`);
 }
 

@@ -25,6 +25,10 @@ komari-theme-YS 是一个面向 [Komari](https://github.com/komari-monitor/komar
 
 ### 首页与总览
 
+- 新增 Network Overview，统一汇总 VPS / Static IP 总数、在线/告警/离线、总流量、平均 RTT 和月费。
+- 新增 All / VPS / Static IP / Warning 类型筛选；搜索和筛选结果会同步更新列表与全球地图。
+- Global Network Map 复用既有 `globe.gl` 模块，支持拖动、缩放、平移、自动旋转、节点 tooltip 和点击定位卡片，并继续按需加载与离屏暂停。
+
 - 首页顶部总览可显示当前时间、节点总数、在线数量、点亮地区、总上下行流量、总流量速率、总 CPU、总内存和总硬盘。
 - 顶部信息支持显示开关、拖拽排序和每行数量设置，可在首页快捷面板临时调整，也可由管理员保存为全站默认。
 - 节点卡片支持方型卡片和条形卡片两种形态：方型适合展示完整信息展板，条形适合大量节点和移动端快速浏览。
@@ -45,6 +49,9 @@ komari-theme-YS 是一个面向 [Komari](https://github.com/komari-monitor/komar
 - CSV 导出包含公式注入防护、标准引号/换行转义和 UTF-8 BOM。
 
 ### 卡片与信息展板
+
+- 保留现有 VPS Card 的视觉和实时字段链，补充 IPv4/IPv6 能力标识、TCP/UDP 连接数与可选月费展示。
+- Static IP Card 是独立组件，展示脱敏 IP、ISP、ASN、供应商、地区、线路类型、延迟、丢包、可用率、风险/代理检测、解锁状态、最近检测和月费。
 
 - 卡片外壳内置数据面板、清透玻璃、霓虹暗面、柔和彩块、极简白板和复古 CRT 等预设。
 - 信息展板支持数据条、弧光仪表、全环仪表、指针仪表、液位容器和状态核心，可在首页快捷面板直接切换。
@@ -76,8 +83,8 @@ komari-theme-YS 是一个面向 [Komari](https://github.com/komari-monitor/komar
 - 自定义排序支持拖拽调整，也保留置顶、上移、下移、置底按钮；新服务器会自动追加到列表末尾。
 - CPU 排序使用可配置快照间隔，减少实时状态频繁变化造成的排序跳动。
 - 首页快捷面板支持本机排序覆盖，管理员可在主题管理页保存全站默认排序。
-- 主页延迟检测可为首页节点卡片绑定 Ping 任务，支持一键将所有服务器绑定到同一个 Ping 任务。
-- 未配置 Ping 时可选择自动隐藏、显示占位或仅绑定节点显示；默认自动隐藏，避免没有配置 Ping 的首页出现无意义的延迟/丢包占位。
+- 主页延迟检测支持把同一节点同时绑定到多个 Ping 任务，例如“上海电信 / 上海联通 / 上海移动”；卡片会按任务名称逐行展示各自的延迟趋势与丢包率，也支持一键把所有服务器加入某个任务而不移除其他线路。
+- 未配置 Ping 时可选择自动显示、显示占位或仅绑定节点显示。默认自动模式会始终保留 RT/丢包区域：优先使用管理员绑定的 Ping 任务；未绑定时从 Komari Ping Overview 自动选择该节点最新任务。旧版接口无法自动发现任务时显示“未配置”，不会隐藏整块区域。
 
 ### 详情页与维护
 
@@ -100,7 +107,7 @@ komari-theme-YS 自带一个前端主题管理面板，入口不是后台菜单�
 - 设置主题默认外观：浅色、深色或跟随系统。
 - 设置首页服务器排序：自定义、到期时间、名称、在线时长、CPU 占用，并可调整 CPU 快照排序间隔。
 - 拖拽调整首页服务器自定义顺序，也可以用按钮快速置顶、上移、下移或置底。
-- 配置首页延迟检测：为首页节点卡片绑定对应的 Ping 任务，支持一键绑定全部节点，并可设置未配置 Ping 时的展示策略。
+- 配置首页延迟检测：为首页节点卡片绑定一个或多个对应 Ping 任务，支持一键绑定全部节点，并可设置未配置 Ping 时的展示策略。建议在 Komari 后台将任务命名为“上海电信”“上海联通”“上海移动”等清晰线路名称，主题会原样展示名称与目标地址。
 - 设置全站默认卡片形态、卡片外壳、背板玻璃、信息展板、数据条动态样式、液位容器、仪表细节、指标配色和跑马灯配色。
 - 设置顶部信息的显示项、拖拽顺序和每行数量。
 - 设置访客信息弹窗、首页快捷筛选整块和真实交互地球等首页独立模块。
@@ -151,6 +158,67 @@ npm run build
 
 ```bash
 npm run package
+```
+
+生成本次网络资产版本的固定文件名（会先构建）：
+
+```bash
+npm run package:network
+```
+
+### Static IP Provider / Adapter
+
+页面组件只消费统一的 `StaticIpNode`，不依赖代理供应商原始响应。默认 `HttpStaticIpProvider` 请求 `GET /api/static-ips`，期望服务端返回：
+
+```json
+{
+  "nodes": [
+    {
+      "id": "uk-home-1",
+      "name": "UK Home IP",
+      "country": "United Kingdom",
+      "countryCode": "GB",
+      "city": "London",
+      "latitude": 51.5072,
+      "longitude": -0.1276,
+      "provider": "provider-name",
+      "ipv4": "203.0.113.10",
+      "isp": "Example ISP",
+      "asn": "AS64500",
+      "ipCategory": "residential",
+      "protocol": "socks5",
+      "status": "online",
+      "latency": 35,
+      "packetLoss": 0,
+      "availability": 99.9,
+      "riskScore": 12,
+      "proxyDetected": false,
+      "hostingDetected": false,
+      "vpnDetected": false,
+      "unlock": { "chatgpt": true, "netflix": true },
+      "monthlyPrice": 6.95,
+      "currency": "EUR",
+      "subscriptionStartedAt": "2026-09-20T00:00:00Z",
+      "subscriptionExpiresAt": "2026-10-20T00:00:00Z",
+      "billingCycleDays": 30,
+      "updatedAt": "2026-09-20T12:00:00Z"
+    }
+  ]
+}
+```
+
+接入新供应商时，在 service 层实现 `StaticIpProvider`，然后用供应商专用 Adapter 转成 `StaticIpNode`。不要把供应商字段带入 `StaticIpCard`。开发模式在真实接口失败时使用 `public/mock/static-ips.json`；生产模式显示隔离错误，不会用 mock 冒充线上数据。
+
+订阅时间使用 `subscriptionStartedAt`、`subscriptionExpiresAt` 和 `billingCycleDays` 三个标准字段。供应商返回其他字段名时，应在其 Adapter 中转换；卡片会显示订阅日期、剩余/逾期天数和计费周期。
+
+登录管理员账号后，打开首页浮动控制菜单中的“主题管理”（也可直接访问 `/?view=theme-manage`），页面顶部现在有独立的“网络资产与 Static IP”面板，可配置启用状态、无凭证 API URL、刷新间隔、地图缩放和告警阈值。也可通过 `.env` 设置 `VITE_STATIC_IP_API_URL`。该 URL 必须指向不需要浏览器持有密钥的服务端代理；API key、密码和代理凭据不得写入 `theme_settings`、前端源码或环境示例。
+
+测试与检查：
+
+```bash
+npm test
+npm run lint
+npm run build
 ```
 
 维护和二次开发前，建议先阅读 [AI 交接与维护说明](./docs/AI_HANDOFF.md)，里面整理了项目文件职责、Komari 接口、主题配置字段和发版检查项。

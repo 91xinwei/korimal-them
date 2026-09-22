@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff,
   GripVertical,
+  Globe2,
   Grid2X2,
   Image as ImageIcon,
   Layers,
@@ -100,6 +101,13 @@ import {
 import { MarqueePreviewStrip } from "@/components/node/MarqueePreviewStrip";
 import { TopInfoSettingsPanel } from "@/components/settings/TopInfoSettingsPanel";
 import { HomeModulesSettingsPanel } from "@/components/settings/HomeModulesSettingsPanel";
+import { NetworkAssetsSettingsPanel } from "@/components/settings/NetworkAssetsSettingsPanel";
+import {
+  DEFAULT_NETWORK_ASSET_SETTINGS,
+  normalizeNetworkAssetSettings,
+  serializeNetworkAssetSettings,
+  type NetworkAssetSettings,
+} from "@/config/network";
 import {
   normalizeHomepagePingTaskBindings,
   type HomepagePingTaskBindings,
@@ -168,6 +176,8 @@ export function ThemeManage() {
   const [draftNodeOrder, setDraftNodeOrder] = useState<string[]>([]);
   const [draftNodeSort, setDraftNodeSort] =
     useState<HomepageNodeSortSettings>(DEFAULT_HOMEPAGE_NODE_SORT);
+  const [draftNetworkSettings, setDraftNetworkSettings] =
+    useState<NetworkAssetSettings>(DEFAULT_NETWORK_ASSET_SETTINGS);
   const [draggingNodeUuid, setDraggingNodeUuid] = useState<string | null>(null);
   const [visualStylePanelExpanded, setVisualStylePanelExpanded] = useState(false);
   const [gradientPanelExpanded, setGradientPanelExpanded] = useState(false);
@@ -263,6 +273,10 @@ export function ThemeManage() {
     () => normalizeHomepageNodeSortSettings(config?.theme_settings?.homepageNodeSort),
     [config?.theme_settings?.homepageNodeSort],
   );
+  const sourceNetworkSettings = useMemo(
+    () => normalizeNetworkAssetSettings(config?.theme_settings),
+    [config?.theme_settings],
+  );
 
   useEffect(() => {
     if (!config) return;
@@ -274,6 +288,7 @@ export function ThemeManage() {
     setDraftPingDisplayMode(sourcePingDisplayMode);
     setDraftNodeOrder(sourceNodeOrder);
     setDraftNodeSort(sourceNodeSort);
+    setDraftNetworkSettings(sourceNetworkSettings);
   }, [
     config,
     sourceAppearance,
@@ -284,6 +299,7 @@ export function ThemeManage() {
     sourcePingDisplayMode,
     sourceNodeOrder,
     sourceNodeSort,
+    sourceNetworkSettings,
   ]);
 
   const sortedTasks = useMemo(
@@ -418,6 +434,14 @@ export function ThemeManage() {
     () => serializeVisualStyleSettings(sourceVisualStyle),
     [sourceVisualStyle],
   );
+  const draftNetworkSettingsSerialized = useMemo(
+    () => JSON.stringify(serializeNetworkAssetSettings(draftNetworkSettings)),
+    [draftNetworkSettings],
+  );
+  const sourceNetworkSettingsSerialized = useMemo(
+    () => JSON.stringify(serializeNetworkAssetSettings(sourceNetworkSettings)),
+    [sourceNetworkSettings],
+  );
   const backgroundDirty = draftBackgroundSerialized !== sourceBackgroundSerialized;
   const isDirty =
     draftAppearance !== sourceAppearance ||
@@ -426,6 +450,7 @@ export function ThemeManage() {
     draftVisualStyleSerialized !== sourceVisualStyleSerialized ||
     draftNodeOrderSerialized !== sourceNodeOrderSerialized ||
     draftNodeSortSerialized !== sourceNodeSortSerialized ||
+    draftNetworkSettingsSerialized !== sourceNetworkSettingsSerialized ||
     draftPingDisplayMode !== sourcePingDisplayMode ||
     draftBindingsSerialized !== sourceBindingsSerialized;
 
@@ -650,6 +675,7 @@ export function ThemeManage() {
       delete baseSettings.homepagePingTask;
       const nextSettings: ThemeSettings & Record<string, unknown> = {
         ...baseSettings,
+        ...serializeNetworkAssetSettings(draftNetworkSettings),
         defaultAppearance: draftAppearance,
         background: nextBackground,
         gradientBackground: nextGradientBackground,
@@ -700,6 +726,7 @@ export function ThemeManage() {
     setDraftPingDisplayMode(sourcePingDisplayMode);
     setDraftNodeOrder(sourceNodeOrder);
     setDraftNodeSort(sourceNodeSort);
+    setDraftNetworkSettings(sourceNetworkSettings);
     setDraggingNodeUuid(null);
     setOrderListExpanded(false);
     setMessage(null);
@@ -802,6 +829,23 @@ export function ThemeManage() {
               无法读取后台 Ping 任务或节点列表: {adminError}
             </div>
           )}
+        </div>
+      </InstancePanel>
+
+      <InstancePanel
+        title="网络资产与 Static IP"
+        description="配置 Static IP Provider 接口、刷新频率、地图与告警阈值。Static IP 原始数据会先经过 Adapter 转换，再进入卡片与地图。"
+        aside={<Globe2 size={16} />}
+        className="scroll-mt-4"
+      >
+        <div id="static-ip-settings">
+          <NetworkAssetsSettingsPanel
+            settings={draftNetworkSettings}
+            onChange={(settings) => {
+              setDraftNetworkSettings(settings);
+              setMessage(null);
+            }}
+          />
         </div>
       </InstancePanel>
 
@@ -2310,7 +2354,7 @@ export function ThemeManage() {
         title="主页延迟检测"
         description={
           <>
-            为首页延迟卡片指定对应的 Ping 任务与展示节点，并选择未配置节点的首页展示策略。每个节点只能归属一个任务。
+            为首页延迟卡片指定对应的 Ping 任务与展示节点，并选择未配置节点的首页展示策略。同一节点可同时绑定上海电信、上海联通、上海移动等多个任务。
             {" "}
             如果当前还没有可用任务，请先前往
             {" "}
@@ -2459,7 +2503,7 @@ export function ThemeManage() {
                         title={
                           allClientsAssigned
                             ? "所有服务器已经绑定到此任务"
-                            : "将所有服务器绑定到此 Ping 任务，并从其他任务移除"
+                            : "将所有服务器加入此 Ping 任务；不会移除其他三网任务"
                         }
                       >
                         应用全部节点

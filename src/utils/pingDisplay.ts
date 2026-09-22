@@ -11,8 +11,8 @@ export const HOMEPAGE_PING_DISPLAY_MODE_OPTIONS: Array<{
 }> = [
   {
     value: "auto",
-    label: "自动隐藏",
-    description: "没有绑定时隐藏 Ping 指标，有绑定时仅绑定节点显示",
+    label: "自动显示",
+    description: "优先使用绑定任务；未绑定时自动选择该节点最新的 Ping 任务",
   },
   {
     value: "placeholder",
@@ -42,10 +42,10 @@ export function hasHomepagePingBindings(value: unknown): boolean {
 
 export function shouldShowPingMetrics(
   mode: HomepagePingDisplayMode,
-  hasAnyBinding: boolean,
+  _hasAnyBinding: boolean,
   isAssigned: boolean,
 ): boolean {
   if (mode === "placeholder") return true;
   if (mode === "assigned") return isAssigned;
-  return hasAnyBinding ? isAssigned : false;
+  return true;
 }

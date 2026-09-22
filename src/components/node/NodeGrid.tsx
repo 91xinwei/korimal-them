@@ -1,12 +1,19 @@
 import { lazy, Suspense, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useCanSeeHiddenNodes, useVisibleNodes } from "@/hooks/useNode";
 import { useHomepagePingOverviewForNodes } from "@/hooks/usePingMini";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useNodeSort } from "@/hooks/useNodeSort";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { useVisualStyle } from "@/hooks/useVisualStyle";
+import { useNetworkAssets } from "@/hooks/useNetworkAssets";
+import { useNetworkSettings } from "@/hooks/useNetworkSettings";
+import { NetworkOverview } from "@/components/network/NetworkOverview";
+import { CarrierNetworkPanel } from "@/components/network/CarrierNetworkPanel";
+import { NodeTypeFilter } from "@/components/network/NodeTypeFilter";
 import { getSnapshot } from "@/services/wsStore";
 import type { NodeDisplay } from "@/types/komari";
+import type { NetworkAssetNode, NodeTypeFilter as NetworkNodeTypeFilter } from "@/types/network";
 import { normalizeHomepageNodeOrder } from "@/utils/nodeOrder";
 import { getExpireDaysRemaining } from "@/utils/format";
 import {
@@ -19,6 +26,7 @@ import {
   sortHomepageNodes,
 } from "@/utils/nodeSort";
 import { NodeCard } from "./NodeCard";
+import { StaticIpCard } from "./StaticIpCard";
 import { StatusOverview } from "./StatusOverview";
 import { VisitorInfo } from "./VisitorInfo";
 import {
@@ -27,8 +35,8 @@ import {
   type HomeQuickFilter,
 } from "./HomeExplorerToolbar";
 
-const NodeGeoPanel = lazy(() =>
-  import("./NodeGeoPanel").then((module) => ({ default: module.NodeGeoPanel })),
+const GlobalNodeMap = lazy(() =>
+  import("@/components/network/GlobalNodeMap").then((module) => ({ default: module.GlobalNodeMap })),
 );
 const HealthSummaryPanel = lazy(() =>
   import("./HealthSummaryPanel").then((module) => ({ default: module.HealthSummaryPanel })),
@@ -96,18 +104,48 @@ function matchesNodeSearch(
   ].some((value) => value?.toLocaleLowerCase("zh-CN").includes(keyword));
 }
 
+function matchesNetworkAssetSearch(node: NetworkAssetNode, query: string) {
+  const keyword = query.trim().toLocaleLowerCase("zh-CN");
+  if (!keyword) return true;
+  return [
+    node.name,
+    node.country,
+    node.countryCode,
+    node.city,
+    node.provider,
+    node.ipv4,
+    node.ipv6,
+    node.type === "static" ? node.isp : undefined,
+    node.type === "static" ? node.asn : undefined,
+  ].some((value) => value?.toLocaleLowerCase("zh-CN").includes(keyword));
+}
+
+function matchesAssetType(node: NetworkAssetNode, filter: NetworkNodeTypeFilter) {
+  if (filter === "all") return true;
+  if (filter === "warning") return node.status === "warning";
+  return node.type === filter;
+}
+
+function nodeDomId(nodeId: string) {
+  return `network-node-${nodeId.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
 export function NodeGrid() {
   const nodes = useVisibleNodes();
   const includeHiddenNodes = useCanSeeHiddenNodes();
   const { data: config } = usePublicConfig();
   const { nodeSort } = useNodeSort();
   const { visualStyle } = useVisualStyle();
+  const networkSettings = useNetworkSettings();
+  const networkAssets = useNetworkAssets(nodes, networkSettings);
   const { resolvedAppearance } = usePreferences();
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [activeGroup, setActiveGroup] = useState("all");
   const [quickFilter, setQuickFilter] = useState<HomeQuickFilter>("all");
   const [activeTool, setActiveTool] = useState<HomeOperationTool>(null);
+  const [assetFilter, setAssetFilter] = useState<NetworkNodeTypeFilter>("all");
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const pingDisplayMode = useMemo(
     () => normalizeHomepagePingDisplayMode(config?.theme_settings?.homepagePingDisplayMode),
     [config?.theme_settings?.homepagePingDisplayMode],
@@ -161,13 +199,43 @@ export function NodeGrid() {
     () => baseFilteredNodes.filter((node) => matchesQuickFilter(node, quickFilter)),
     [baseFilteredNodes, quickFilter],
   );
+  const vpsAssetsById = useMemo(
+    () => new Map(networkAssets.vpsNodes.map((node) => [node.id, node])),
+    [networkAssets.vpsNodes],
+  );
+  const filteredVpsDisplays = useMemo(
+    () => filteredNodes.filter((node) => {
+      const asset = vpsAssetsById.get(node.uuid);
+      return asset ? matchesAssetType(asset, assetFilter) : assetFilter === "all" || assetFilter === "vps";
+    }),
+    [assetFilter, filteredNodes, vpsAssetsById],
+  );
+  const staticSearchNodes = useMemo(
+    () => networkAssets.staticNodes.filter((node) => matchesNetworkAssetSearch(node, deferredSearchQuery)),
+    [deferredSearchQuery, networkAssets.staticNodes],
+  );
+  const filterCandidates = useMemo(
+    () => [
+      ...filteredNodes.map((node) => vpsAssetsById.get(node.uuid)).filter((node): node is NonNullable<typeof node> => Boolean(node)),
+      ...staticSearchNodes,
+    ],
+    [filteredNodes, staticSearchNodes, vpsAssetsById],
+  );
+  const filteredNetworkAssets = useMemo(
+    () => filterCandidates.filter((node) => matchesAssetType(node, assetFilter)),
+    [assetFilter, filterCandidates],
+  );
+  const filteredStaticNodes = useMemo(
+    () => staticSearchNodes.filter((node) => matchesAssetType(node, assetFilter)),
+    [assetFilter, staticSearchNodes],
+  );
   const visibleNodeKey = useMemo(
-    () => filteredNodes.map((node) => node.uuid).join("|"),
-    [filteredNodes],
+    () => filteredVpsDisplays.map((node) => node.uuid).join("|"),
+    [filteredVpsDisplays],
   );
   const staticUuids = useMemo(
-    () => sortHomepageNodes(filteredNodes, customOrder, nodeSort),
-    [customOrder, filteredNodes, nodeSortKey],
+    () => sortHomepageNodes(filteredVpsDisplays, customOrder, nodeSort),
+    [customOrder, filteredVpsDisplays, nodeSortKey],
   );
   const [realtimeUuids, setRealtimeUuids] = useState<string[]>([]);
   const useRealtimeSort = isRealtimeNodeSortMode(nodeSort.mode);
@@ -205,7 +273,7 @@ export function NodeGrid() {
     () => {
       if (!useRealtimeSort || realtimeUuids.length === 0) return staticUuids;
 
-      const available = new Set(filteredNodes.map((node) => node.uuid));
+      const available = new Set(filteredVpsDisplays.map((node) => node.uuid));
       const seen = new Set<string>();
       const reconciled: string[] = [];
 
@@ -223,7 +291,7 @@ export function NodeGrid() {
 
       return reconciled;
     },
-    [filteredNodes, realtimeUuids, staticUuids, useRealtimeSort],
+    [filteredVpsDisplays, realtimeUuids, staticUuids, useRealtimeSort],
   );
   const visualRedrawKey = useMemo(
     () =>
@@ -267,30 +335,31 @@ export function NodeGrid() {
   const isStripLayout = visualStyle.cardLayout === "strip";
   useHomepagePingOverviewForNodes(uuids);
 
-  if (nodes.length === 0) {
-    return (
-      <>
-        {visualStyle.homeModules.visitorInfo && <VisitorInfo showTrigger={false} />}
-        <div className="flex h-[40vh] flex-col items-center justify-center gap-2 text-[var(--text-tertiary)]">
-          <span className="text-[15px]">尚未连接到任何节点</span>
-          <span className="text-[12px]">等待后端推送或前往管理后台添加</span>
-        </div>
-      </>
-    );
-  }
+  const handleMapNodeClick = (nodeId: string) => {
+    setSelectedAssetId(nodeId);
+    document.getElementById(nodeDomId(nodeId))?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  useEffect(() => {
+    if (!selectedAssetId) return;
+    const timer = window.setTimeout(() => setSelectedAssetId(null), 2400);
+    return () => window.clearTimeout(timer);
+  }, [selectedAssetId]);
 
   return (
     <div className="flex flex-col gap-4 xl:gap-5">
-      <div className="home-top-stage" data-earth={visualStyle.homeModules.mapEnabled ? "true" : "false"}>
+      <div className="home-top-stage" data-earth="false">
         <div className="home-top-content">
-          <StatusOverview
-            nodes={filteredNodes}
-            topInfo={visualStyle.topInfo}
-            topInfoProgress={visualStyle.topInfoProgress}
-            topInfoSplit={visualStyle.topInfoSplit}
-            topInfoOrder={visualStyle.topInfoOrder}
-            topInfoColumns={visualStyle.topInfoColumns}
-          />
+          {filteredVpsDisplays.length > 0 && (
+            <StatusOverview
+              nodes={filteredVpsDisplays}
+              topInfo={visualStyle.topInfo}
+              topInfoProgress={visualStyle.topInfoProgress}
+              topInfoSplit={visualStyle.topInfoSplit}
+              topInfoOrder={visualStyle.topInfoOrder}
+              topInfoColumns={visualStyle.topInfoColumns}
+            />
+          )}
           {!visualStyle.homeModules.explorerToolbar && visualStyle.homeModules.visitorInfo && (
             <VisitorInfo showTrigger={false} />
           )}
@@ -306,62 +375,108 @@ export function NodeGrid() {
               counts={quickFilterCounts}
               activeTool={activeTool}
               onToolChange={setActiveTool}
-              resultCount={filteredNodes.length}
-              totalCount={nodes.length}
+              resultCount={filterCandidates.length}
+              totalCount={networkAssets.allNodes.length}
               showVisitorInfo={visualStyle.homeModules.visitorInfo}
             />
           )}
         </div>
-        {visualStyle.homeModules.mapEnabled && (
-          <Suspense fallback={<div className="node-earth-stage is-loading" aria-busy />}>
-            <NodeGeoPanel nodes={filteredNodes} />
-          </Suspense>
-        )}
       </div>
+      {networkSettings.showGlobalMap && (
+        <>
+          <div className="network-command-center">
+            <NetworkOverview
+              nodes={networkAssets.allNodes}
+              loading={networkAssets.staticLoading && nodes.length === 0}
+              showMonthlyPrice={networkSettings.showMonthlyPrice}
+            />
+            <Suspense fallback={<div className="global-node-map is-loading" aria-busy />}>
+              <GlobalNodeMap
+                nodes={filteredNetworkAssets}
+                defaultZoom={networkSettings.mapDefaultZoom}
+                selectedNodeId={selectedAssetId}
+                onNodeClick={handleMapNodeClick}
+              />
+            </Suspense>
+          </div>
+          <CarrierNetworkPanel
+            uuid={(filteredNetworkAssets.find((node) => node.id === selectedAssetId && node.type === "vps") ?? filteredNetworkAssets.find((node) => node.type === "vps"))?.id}
+            marqueeStyle={visualStyle.marqueeStyle}
+          />
+        </>
+      )}
+      <NodeTypeFilter value={assetFilter} nodes={filterCandidates} onChange={setAssetFilter} />
       {visualStyle.homeModules.explorerToolbar && activeTool && (
         <Suspense fallback={<div className="operations-panel is-loading" aria-busy />}>
-          {activeTool === "health" && <HealthSummaryPanel nodes={filteredNodes} />}
-          {activeTool === "topology" && <NodeTopologyPanel nodes={filteredNodes} />}
-          {activeTool === "export" && <SnapshotExportPanel nodes={filteredNodes} />}
+          {activeTool === "health" && <HealthSummaryPanel nodes={filteredVpsDisplays} />}
+          {activeTool === "topology" && <NodeTopologyPanel nodes={filteredVpsDisplays} />}
+          {activeTool === "export" && <SnapshotExportPanel nodes={filteredVpsDisplays} />}
         </Suspense>
       )}
-      {uuids.length === 0 ? (
-        <div className="home-filter-empty">
-          <span>没有符合当前搜索或筛选条件的节点</span>
-          <button type="button" onClick={() => { setSearchQuery(""); setActiveGroup("all"); setQuickFilter("all"); }}>清除筛选</button>
+      {networkAssets.staticError && networkSettings.showStaticIps && (
+        <div className="network-source-error" role="status">
+          <span>Static IP 数据暂不可用，VPS 实时监控不受影响。</span>
+          <button type="button" onClick={() => void networkAssets.retryStatic()}>重试</button>
         </div>
-      ) : (
-      <div
-        className={
-          isStripLayout
-            ? "node-card-list is-strip-layout"
-            : "node-card-list is-square-layout"
-        }
-        style={
-          isStripLayout
-            ? undefined
-            : { gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))" }
-        }
-      >
-        {uuids.map((uuid) => (
-          <div key={uuid}>
-            <NodeCard
-              uuid={uuid}
-              resolvedAppearance={resolvedAppearance}
-              cardLayout={visualStyle.cardLayout}
-              visualRedrawKey={visualRedrawKey}
-              dashboardStyle={visualStyle.dashboardStyle}
-              showTrafficQuota={visualStyle.showTrafficQuota}
-              pingDisplayMode={pingDisplayMode}
-              hasAnyHomepagePingBinding={hasAnyHomepagePingBinding}
-              dashboardSettings={visualStyle.dashboardSettings}
-              radarLatencyMaxMs={visualStyle.radarLatencyMaxMs}
-              marqueeStyle={visualStyle.marqueeStyle}
-            />
-          </div>
-        ))}
-      </div>
       )}
+      <div className="network-asset-sections">
+          {uuids.length > 0 && (
+            <section className="network-asset-section" aria-labelledby="vps-nodes-heading">
+              <div className="network-section-heading"><h2 id="vps-nodes-heading">VPS Nodes</h2><span>{uuids.length}</span></div>
+              <div
+                className={isStripLayout ? "node-card-list is-strip-layout" : "node-card-list is-square-layout"}
+                style={isStripLayout ? undefined : { gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))" }}
+              >
+                {uuids.map((uuid) => (
+                  <div key={uuid} id={nodeDomId(uuid)} data-highlight={selectedAssetId === uuid ? "true" : "false"}>
+                    <NodeCard
+                      uuid={uuid}
+                      resolvedAppearance={resolvedAppearance}
+                      cardLayout={visualStyle.cardLayout}
+                      visualRedrawKey={visualRedrawKey}
+                      dashboardStyle={visualStyle.dashboardStyle}
+                      showTrafficQuota={visualStyle.showTrafficQuota}
+                      pingDisplayMode={pingDisplayMode}
+                      hasAnyHomepagePingBinding={hasAnyHomepagePingBinding}
+                      dashboardSettings={visualStyle.dashboardSettings}
+                      radarLatencyMaxMs={visualStyle.radarLatencyMaxMs}
+                      marqueeStyle={visualStyle.marqueeStyle}
+                      showMonthlyPrice={networkSettings.showMonthlyPrice}
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {networkSettings.showStaticIps && (
+            <section className="network-asset-section" aria-labelledby="static-ip-heading">
+              <div className="network-section-heading">
+                <h2 id="static-ip-heading">Static IP Nodes</h2>
+                <span>{filteredStaticNodes.length}</span>
+                <Link className="network-source-config-link" to="/?view=theme-manage#static-ip-settings">
+                  配置数据源
+                </Link>
+              </div>
+              <div className="node-card-list is-square-layout" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))" }}>
+                {networkAssets.staticLoading && !networkAssets.staticError && filteredStaticNodes.length === 0
+                  ? Array.from({ length: 3 }, (_, index) => <div key={index} className="static-ip-card-skeleton" aria-busy />)
+                  : filteredStaticNodes.length > 0
+                    ? filteredStaticNodes.map((node) => (
+                    <div key={node.id} id={nodeDomId(node.id)} data-highlight={selectedAssetId === node.id ? "true" : "false"}>
+                      <StaticIpCard node={node} settings={networkSettings} />
+                    </div>
+                    ))
+                    : (
+                      <div className="static-ip-empty-state">
+                        <strong>尚未添加 Static IP</strong>
+                        <span>在主题设置中填写 Provider API URL；保存后会自动刷新并生成卡片。</span>
+                        <Link to="/?view=theme-manage#static-ip-settings">立即配置 Static IP 数据源</Link>
+                      </div>
+                    )}
+              </div>
+            </section>
+          )}
+      </div>
     </div>
   );
 }

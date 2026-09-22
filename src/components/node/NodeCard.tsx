@@ -23,9 +23,16 @@ import {
   ExternalLink,
   Power,
   AlertTriangle,
+  Network,
+  WalletCards,
 } from "lucide-react";
 import { useNode, useNodeTrafficTrend } from "@/hooks/useNode";
-import { usePingMini, usePingMiniBuckets } from "@/hooks/usePingMini";
+import {
+  usePingMini,
+  usePingMiniBuckets,
+  usePingMiniSeries,
+  type PingMiniSeries,
+} from "@/hooks/usePingMini";
 import {
   formatBytes,
   formatExpireDays,
@@ -88,6 +95,105 @@ import {
 
 type ResolvedAppearance = "light" | "dark";
 
+function CarrierPingRow({
+  series,
+  carrierName,
+  marqueeStyle,
+  redrawKey,
+}: {
+  series?: PingMiniSeries;
+  carrierName: string;
+  marqueeStyle: MarqueeStyleSettings;
+  redrawKey: string;
+}) {
+  const buckets = usePingMiniBuckets(series ?? { samples: [] });
+  const detail = series
+    ? [series.taskName, series.taskTarget].filter(Boolean).join(" · ")
+    : "等待监测任务";
+
+  return (
+    <div className="carrier-ping-row" title={detail}>
+      <div className="carrier-ping-identity">
+        <span className="carrier-ping-signal" aria-hidden />
+        <strong>{carrierName}</strong>
+        <small>{detail}</small>
+      </div>
+      <div className="carrier-ping-metric">
+        <span>延迟</span>
+        <strong>{series?.lastValue == null ? "等待数据" : `${Math.round(series.lastValue)} ms`}</strong>
+        <MiniBars
+          values={series?.values ?? []}
+          max={series?.max ?? 1}
+          lastValue={series?.lastValue ?? undefined}
+          buckets={buckets}
+          color="var(--ys-metric-latency, var(--status-online))"
+          marqueeStyle={marqueeStyle}
+          redrawKey={`${redrawKey}:ping:${carrierName}`}
+        />
+      </div>
+      <div className="carrier-ping-metric">
+        <span>丢包</span>
+        <strong>{series?.loss == null ? "等待数据" : `${series.loss.toFixed(1)}%`}</strong>
+        <QualityBars
+          value={series?.loss}
+          buckets={buckets}
+          color="var(--ys-metric-loss, var(--status-offline))"
+          marqueeStyle={marqueeStyle}
+          redrawKey={`${redrawKey}:loss:${carrierName}`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CarrierPingMatrix({
+  series,
+  marqueeStyle,
+  redrawKey,
+}: {
+  series: PingMiniSeries[];
+  marqueeStyle: MarqueeStyleSettings;
+  redrawKey: string;
+}) {
+  const carriers = [
+    { name: "上海电信", match: /电信|telecom/i },
+    { name: "上海联通", match: /联通|unicom/i },
+    { name: "上海移动", match: /移动|mobile|cmcc/i },
+  ];
+  const used = new Set<number>();
+  const rows = carriers.map((carrier) => {
+    const matched = series.find(
+      (item) =>
+        !used.has(item.taskId) &&
+        carrier.match.test(`${item.taskName} ${item.taskTarget}`),
+    );
+    if (matched) used.add(matched.taskId);
+    return { ...carrier, series: matched };
+  });
+  const unmatched = series.filter((item) => !used.has(item.taskId));
+  rows.forEach((row) => {
+    if (!row.series) row.series = unmatched.shift();
+  });
+
+  return (
+    <section className="card-metric-section card-metric-divided carrier-ping-matrix" aria-label="三网延迟与丢包">
+      <div className="carrier-ping-title">
+        <span>三网测速</span>
+        <small>{series.filter((item) => item.lastValue != null || item.loss != null).length} / 3 条线路有数据</small>
+      </div>
+      {rows.map((row) => (
+        <CarrierPingRow
+          key={row.name}
+          carrierName={row.name}
+          series={row.series}
+          marqueeStyle={marqueeStyle}
+          redrawKey={redrawKey}
+        />
+      ))}
+    </section>
+  );
+}
+
 export const NodeCard = memo(function NodeCard({
   uuid,
   resolvedAppearance,
@@ -100,6 +206,7 @@ export const NodeCard = memo(function NodeCard({
   dashboardSettings,
   radarLatencyMaxMs,
   marqueeStyle,
+  showMonthlyPrice = true,
 }: {
   uuid: string;
   resolvedAppearance: ResolvedAppearance;
@@ -112,10 +219,12 @@ export const NodeCard = memo(function NodeCard({
   dashboardSettings: DashboardSettings;
   radarLatencyMaxMs: number;
   marqueeStyle: MarqueeStyleSettings;
+  showMonthlyPrice?: boolean;
 }) {
   const node = useNode(uuid);
   const trafficTrend = useNodeTrafficTrend(uuid);
   const ping = usePingMini(uuid);
+  const pingSeries = usePingMiniSeries(uuid);
   const pingBuckets = usePingMiniBuckets(ping);
   const [hoveredLatencyIndex, setHoveredLatencyIndex] = useState<number | null>(null);
   const [hoveredLossIndex, setHoveredLossIndex] = useState<number | null>(null);
@@ -190,6 +299,9 @@ export const NodeCard = memo(function NodeCard({
       : null;
   const isDashboardCard = dashboardStyle !== "bars";
   const offlineFor = isOffline ? formatOfflineDuration(node.updatedAt) : null;
+  const monthlyPrice = showMonthlyPrice
+    ? formatNodeMonthlyPrice(node.price, node.billing_cycle, node.currency)
+    : null;
 
   if (cardLayout === "strip") {
     const latencyText =
@@ -262,6 +374,12 @@ export const NodeCard = memo(function NodeCard({
               <p className="server-card-subtitle" title={subtitle}>
                 {subtitle}
               </p>
+            )}
+            {(node.ipv4 || node.ipv6) && (
+              <div className="vps-ip-badges" aria-label="IP versions">
+                {node.ipv4 && <span>V4</span>}
+                {node.ipv6 && <span>V6</span>}
+              </div>
             )}
             {footerTags.length > 0 && (
               <div className="dstatus-tags-row strip-card-tags">
@@ -428,6 +546,12 @@ export const NodeCard = memo(function NodeCard({
                 {subtitle}
               </p>
             )}
+            {(node.ipv4 || node.ipv6) && (
+              <div className="vps-ip-badges" aria-label="IP versions">
+                {node.ipv4 && <span>V4</span>}
+                {node.ipv6 && <span>V6</span>}
+              </div>
+            )}
           </div>
           <Link
             to={`/instance/${node.uuid}`}
@@ -588,7 +712,13 @@ export const NodeCard = memo(function NodeCard({
               )}
             </div>
 
-            {showPingMetrics && (
+            {(true ? (
+              <CarrierPingMatrix
+                series={pingSeries}
+                marqueeStyle={marqueeStyle}
+                redrawKey={metricRedrawKey}
+              />
+            ) : (
               <div className="card-metric-section card-metric-divided server-health-grid">
                 <div
                   className="server-health-block"
@@ -602,7 +732,7 @@ export const NodeCard = memo(function NodeCard({
                     <span className="server-health-value tabular" style={{ color: latencyTone }}>
                       {ping.lastValue != null ? (
                         <>
-                          {Math.round(ping.lastValue)}
+                          {Math.round(ping.lastValue ?? 0)}
                           <span className="server-health-unit">ms</span>
                         </>
                       ) : (
@@ -654,7 +784,7 @@ export const NodeCard = memo(function NodeCard({
                     <span className="server-health-value tabular" style={{ color: lossTone }}>
                       {ping.loss != null ? (
                         <>
-                          {ping.loss.toFixed(1)}
+                          {(ping.loss ?? 0).toFixed(1)}
                           <span className="server-health-unit">%</span>
                         </>
                       ) : (
@@ -693,9 +823,22 @@ export const NodeCard = memo(function NodeCard({
                   </div>
                 </div>
               </div>
-            )}
+            ))}
           </div>
         )}
+
+        {dashboardStyle !== "bars" && (
+          <CarrierPingMatrix
+            series={pingSeries}
+            marqueeStyle={marqueeStyle}
+            redrawKey={metricRedrawKey}
+          />
+        )}
+
+        <div className="server-connection-row" aria-label="连接数">
+          <div><Network size={13} strokeWidth={2} /><span>TCP 连接</span><strong>{node.connectionsTcp}</strong></div>
+          <div><Network size={13} strokeWidth={2} /><span>UDP 连接</span><strong>{node.connectionsUdp}</strong></div>
+        </div>
 
         <div className="server-card-footer">
           <div className="server-card-meta-grid">
@@ -735,11 +878,41 @@ export const NodeCard = memo(function NodeCard({
               )}
             </div>
           )}
+          {monthlyPrice && (
+            <div className="vps-price-chip" aria-label="月费">
+              <WalletCards size={13} strokeWidth={2} />
+              <strong>{monthlyPrice.value}{monthlyPrice.unit}</strong>
+            </div>
+          )}
         </div>
       </div>
     </article>
   );
 });
+
+function formatNodeMonthlyPrice(
+  price: number,
+  billingCycle: string | number | null | undefined,
+  currency: string,
+) {
+  if (!Number.isFinite(price) || price <= 0) return null;
+  const parsedCycle = Number(billingCycle);
+  const monthly = Number.isFinite(parsedCycle) && parsedCycle > 0 ? price * (30 / parsedCycle) : price;
+  const currencyCode = currency.trim().toUpperCase();
+  let value = `${currencyCode || ""}${monthly.toFixed(2)}`;
+  if (/^[A-Z]{3}$/.test(currencyCode)) {
+    try {
+      value = new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: currencyCode,
+        maximumFractionDigits: 2,
+      }).format(monthly);
+    } catch {
+      value = `${currencyCode} ${monthly.toFixed(2)}`;
+    }
+  }
+  return { value, unit: "/月" };
+}
 
 function LiquidMetricPanel({
   settings,

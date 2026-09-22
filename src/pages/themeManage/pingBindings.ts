@@ -62,20 +62,15 @@ export function applyClientAssignment(
   const taskKey = String(taskId);
   const next = pruneBindings(bindings);
 
-  for (const [currentTaskId, clients] of Object.entries(next)) {
-    const filtered = clients.filter((uuid) => uuid !== clientUuid);
-    if (filtered.length > 0) {
-      next[currentTaskId] = filtered;
-    } else {
-      delete next[currentTaskId];
-    }
-  }
-
   if (checked) {
     const selected = next[taskKey] ?? [];
     next[taskKey] = Array.from(new Set([...selected, clientUuid])).sort((left, right) =>
       left.localeCompare(right),
     );
+  } else if (next[taskKey]) {
+    const selected = next[taskKey].filter((uuid) => uuid !== clientUuid);
+    if (selected.length > 0) next[taskKey] = selected;
+    else delete next[taskKey];
   }
 
   return next;
@@ -92,17 +87,7 @@ export function applyAllClientsToTask(
   );
   if (allClients.length === 0) return pruneBindings(bindings);
 
-  const allClientSet = new Set(allClients);
-  const next: HomepagePingTaskBindings = {};
-
-  for (const [currentTaskId, clients] of Object.entries(pruneBindings(bindings))) {
-    if (currentTaskId === taskKey) continue;
-    const filtered = clients.filter((uuid) => !allClientSet.has(uuid));
-    if (filtered.length > 0) {
-      next[currentTaskId] = filtered;
-    }
-  }
-
+  const next = pruneBindings(bindings);
   next[taskKey] = allClients;
   return pruneBindings(next);
 }
