@@ -161,6 +161,28 @@
       "billingCycleDays": 30
     },
     {
+      "id": "6RIMRNKR",
+      "name": "UK Glide Dedicated Residential",
+      "type": "static",
+      "planName": "6RIMRNKR",
+      "country": "United Kingdom",
+      "countryCode": "GB",
+      "provider": "Glide Student & Residential Limited",
+      "isp": "Glide Student & Residential Limited",
+      "asn": "AS42689",
+      "ipCategory": "residential",
+      "status": "online",
+      "bandwidth": "Unlimited",
+      "monthlyPrice": 1.40,
+      "currency": "USD",
+      "subscriptionStartedAt": "2026-09-11T00:00:00Z",
+      "subscriptionExpiresAt": "2026-10-12T00:00:00Z",
+      "billingCycleDays": 31,
+      "autoRenew": true,
+      "nextChargeAt": "2026-10-09T00:00:00Z",
+      "nextBillingAmount": 1.40
+    },
+    {
       "id": "jp-isp-01",
       "name": "JP ISP Static 01",
       "type": "static",

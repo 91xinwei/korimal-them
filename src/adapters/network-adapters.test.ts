@@ -23,6 +23,10 @@ describe("StaticIpAdapter", () => {
       subscriptionStartedAt: "2026-09-01T00:00:00Z",
       subscriptionExpiresAt: "2026-10-01T00:00:00Z",
       billingCycleDays: "30",
+      autoRenew: "true",
+      nextChargeAt: "2026-09-28T00:00:00Z",
+      nextBillingAmount: "1.40",
+      bandwidth: "Unlimited",
       ignoredVendorCredential: "must-not-survive",
     }, DEFAULT_THRESHOLDS, Date.parse("2026-09-20T00:00:00Z"));
 
@@ -40,6 +44,10 @@ describe("StaticIpAdapter", () => {
       subscriptionStartedAt: "2026-09-01T00:00:00.000Z",
       subscriptionExpiresAt: "2026-10-01T00:00:00.000Z",
       billingCycleDays: 30,
+      autoRenew: true,
+      nextChargeAt: "2026-09-28T00:00:00.000Z",
+      nextBillingAmount: 1.4,
+      bandwidth: "Unlimited",
     });
     expect(node).not.toHaveProperty("ignoredVendorCredential");
     expect(node?.unlock).toEqual({

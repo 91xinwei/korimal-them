@@ -103,6 +103,7 @@ export interface StaticIpQuality {
 
 export interface StaticIpNode extends BaseNode {
   type: "static";
+  planName?: string;
   isp?: string;
   asn?: string;
   ipCategory?: StaticIpCategory;
@@ -117,6 +118,10 @@ export interface StaticIpNode extends BaseNode {
   subscriptionStartedAt?: string;
   subscriptionExpiresAt?: string;
   billingCycleDays?: number;
+  autoRenew?: boolean;
+  nextChargeAt?: string;
+  nextBillingAmount?: number;
+  bandwidth?: string;
 }
 
 export type NetworkAssetNode = VpsNode | StaticIpNode;

@@ -147,6 +147,7 @@ export const StaticIpCard = memo(function StaticIpCard({
           <Field icon={<CloudCog size={14} />} label="ISP" value={node.isp} />
           <Field icon={<Fingerprint size={14} />} label="ASN" value={node.asn} />
           <Field icon={<BadgeCheck size={14} />} label="Provider" value={node.provider} />
+          {node.planName && <Field icon={<BadgeCheck size={14} />} label="Plan" value={node.planName} />}
           <Field
             icon={<MapPin size={14} />}
             label="Location"
@@ -201,6 +202,23 @@ export const StaticIpCard = memo(function StaticIpCard({
                 label="Billing Cycle"
                 value={`${node.billingCycleDays} days`}
               />
+            )}
+            {node.nextChargeAt && (
+              <Field
+                icon={<CalendarDays size={14} />}
+                label={node.autoRenew ? "Next Auto-renew" : "Next Charge"}
+                value={dateLabel(node.nextChargeAt)}
+              />
+            )}
+            {node.nextBillingAmount != null && (
+              <Field
+                icon={<WalletCards size={14} />}
+                label="Next Billing"
+                value={`${node.currency ?? "USD"} ${node.nextBillingAmount.toFixed(2)}`}
+              />
+            )}
+            {node.bandwidth && (
+              <Field icon={<Network size={14} />} label="Bandwidth" value={node.bandwidth} />
             )}
           </div>
         )}

@@ -32,6 +32,7 @@ const RawStaticIpNodeSchema = z
     ipv4: optionalText,
     ipv6: optionalText,
     isp: optionalText,
+    planName: optionalText,
     asn: optionalText,
     ipCategory: optionalText,
     protocol: optionalText,
@@ -56,6 +57,10 @@ const RawStaticIpNodeSchema = z
     subscriptionStartedAt: optionalText,
     subscriptionExpiresAt: optionalText,
     billingCycleDays: optionalNumber,
+    autoRenew: optionalBoolean,
+    nextChargeAt: optionalText,
+    nextBillingAmount: optionalNumber,
+    bandwidth: optionalText,
   })
   .strip();
 
@@ -184,6 +189,7 @@ export function adaptStaticIpNode(
     monthlyPrice: numberValue(raw.monthlyPrice, 0),
     currency: text(raw.currency)?.toUpperCase(),
     isp: text(raw.isp),
+    planName: text(raw.planName),
     asn: text(raw.asn),
     ipCategory: category(raw.ipCategory),
     protocol: protocol(raw.protocol),
@@ -197,6 +203,10 @@ export function adaptStaticIpNode(
     subscriptionStartedAt: dateTimeValue(raw.subscriptionStartedAt),
     subscriptionExpiresAt: dateTimeValue(raw.subscriptionExpiresAt),
     billingCycleDays: numberValue(raw.billingCycleDays, 1, 3650),
+    autoRenew: booleanValue(raw.autoRenew),
+    nextChargeAt: dateTimeValue(raw.nextChargeAt),
+    nextBillingAmount: numberValue(raw.nextBillingAmount, 0),
+    bandwidth: text(raw.bandwidth),
   };
 }
 
