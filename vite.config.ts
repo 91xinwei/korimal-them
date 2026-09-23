@@ -38,6 +38,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      "/api/ip-quality": {
+        target: "http://127.0.0.1:8787",
+        changeOrigin: true,
+      },
       "/api": {
         target: "http://localhost:25774",
         changeOrigin: true,

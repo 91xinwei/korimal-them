@@ -1,0 +1,6 @@
+{
+  "nodes": [
+    { "id": "us-comcast-dedicated-01", "ip": "48.45.163.45" },
+    { "id": "us-astound-dedicated-01", "ip": "23.182.129.198" }
+  ]
+}

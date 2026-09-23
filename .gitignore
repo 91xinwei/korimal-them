@@ -18,3 +18,4 @@ Thumbs.db
 
 .cache/
 coverage/
+/data/ip-quality-cache.json

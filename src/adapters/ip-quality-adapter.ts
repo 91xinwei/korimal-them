@@ -27,6 +27,7 @@ export interface IpQualityInput {
   ipqs?: unknown;
   ipinfo?: unknown;
   abuseipdb?: unknown;
+  proxycheck?: unknown;
   maxmind?: unknown;
   qualityScore?: unknown;
   riskScore?: unknown;
@@ -46,6 +47,7 @@ export function adaptIpQuality(input: IpQualityInput): StaticIpQuality | undefin
   const abuseEnvelope = asRecord(input.abuseipdb) ?? asRecord(canonical?.abuseipdb);
   const abuse = asRecord(abuseEnvelope?.data) ?? abuseEnvelope;
   const maxmind = asRecord(input.maxmind) ?? asRecord(canonical?.maxmind);
+  const proxycheck = asRecord(input.proxycheck) ?? asRecord(canonical?.proxycheck);
   const maxmindTraits = asRecord(maxmind?.traits);
 
   const sources: IpQualityProvider[] = [];
@@ -53,6 +55,7 @@ export function adaptIpQuality(input: IpQualityInput): StaticIpQuality | undefin
   if (ipinfo) sources.push("ipinfo");
   if (abuse) sources.push("abuseipdb");
   if (maxmind) sources.push("maxmind");
+  if (proxycheck) sources.push("proxycheck");
 
   const fraudScore = first(num(canonical?.fraudScore), num(ipqs?.fraud_score), num(ipqs?.fraudScore));
   const abuseConfidenceScore = first(
@@ -60,11 +63,12 @@ export function adaptIpQuality(input: IpQualityInput): StaticIpQuality | undefin
     num(abuse?.abuseConfidenceScore),
   );
   const maxmindRisk = first(num(maxmind?.ipRiskScore), num(maxmind?.risk), num(maxmindTraits?.ip_risk));
+  const proxycheckRisk = num(proxycheck?.risk);
   const explicitRisk = first(num(canonical?.reputationRiskScore), num(input.riskScore));
   const reputationRiskScore = first(
     explicitRisk,
-    [fraudScore, abuseConfidenceScore, maxmindRisk].filter((value): value is number => value != null).length
-      ? Math.max(...[fraudScore, abuseConfidenceScore, maxmindRisk].filter((value): value is number => value != null))
+    [fraudScore, abuseConfidenceScore, maxmindRisk, proxycheckRisk].filter((value): value is number => value != null).length
+      ? Math.max(...[fraudScore, abuseConfidenceScore, maxmindRisk, proxycheckRisk].filter((value): value is number => value != null))
       : undefined,
   );
 
@@ -77,7 +81,8 @@ export function adaptIpQuality(input: IpQualityInput): StaticIpQuality | undefin
   if (latency != null) parts.push({ value: Math.max(0, 100 - latency / 4), weight: 20 });
   if (packetLoss != null) parts.push({ value: Math.max(0, 100 - packetLoss * 10), weight: 20 });
   if (availability != null) parts.push({ value: availability, weight: 15 });
-  const derivedScore = parts.length
+  const hasNetworkMeasurement = latency != null || packetLoss != null || availability != null;
+  const derivedScore = hasNetworkMeasurement && parts.length
     ? Math.round(parts.reduce((sum, part) => sum + part.value * part.weight, 0) /
       parts.reduce((sum, part) => sum + part.weight, 0))
     : undefined;
@@ -86,7 +91,7 @@ export function adaptIpQuality(input: IpQualityInput): StaticIpQuality | undefin
   const providerName = str(canonical?.provider)?.toLowerCase() as IpQualityProvider | undefined;
   const provider: IpQualityProvider = sources.length > 1
     ? "composite"
-    : sources[0] ?? (providerName && ["ipqs", "ipinfo", "abuseipdb", "maxmind", "composite", "local"].includes(providerName)
+    : sources[0] ?? (providerName && ["ipqs", "ipinfo", "abuseipdb", "maxmind", "proxycheck", "composite", "local"].includes(providerName)
       ? providerName : "local");
 
   if (score == null && reputationRiskScore == null && sources.length === 0 && !canonical) return undefined;
@@ -97,17 +102,17 @@ export function adaptIpQuality(input: IpQualityInput): StaticIpQuality | undefin
     abuseConfidenceScore,
     provider,
     sources: sources.length ? sources : [provider],
-    checkedAt: first(iso(canonical?.checkedAt), iso(ipqs?.request_date), iso(abuse?.lastReportedAt)),
+    checkedAt: first(iso(canonical?.checkedAt), iso(proxycheck?.checkedAt), iso(ipqs?.request_date), iso(abuse?.lastReportedAt)),
     stale: bool(canonical?.stale),
-    proxyDetected: first(bool(canonical?.proxyDetected), bool(ipqs?.proxy), bool(privacy?.proxy), bool(input.proxyDetected)),
+    proxyDetected: first(bool(canonical?.proxyDetected), bool(ipqs?.proxy), bool(privacy?.proxy), bool(proxycheck?.proxy), bool(input.proxyDetected)),
     hostingDetected: first(bool(canonical?.hostingDetected), bool(ipqs?.is_crawler), bool(privacy?.hosting), bool(maxmindTraits?.is_hosting_provider), bool(input.hostingDetected)),
-    vpnDetected: first(bool(canonical?.vpnDetected), bool(ipqs?.vpn), bool(privacy?.vpn), bool(maxmindTraits?.is_anonymous_vpn), bool(input.vpnDetected)),
+    vpnDetected: first(bool(canonical?.vpnDetected), bool(ipqs?.vpn), bool(privacy?.vpn), bool(maxmindTraits?.is_anonymous_vpn), bool(proxycheck?.vpn), bool(input.vpnDetected)),
     torDetected: first(bool(canonical?.torDetected), bool(ipqs?.tor), bool(privacy?.tor), bool(maxmindTraits?.is_tor_exit_node)),
     residentialProxyDetected: first(bool(canonical?.residentialProxyDetected), bool(privacy?.residential), bool(maxmindTraits?.is_residential_proxy)),
     botDetected: first(bool(canonical?.botDetected), bool(ipqs?.bot_status)),
     recentAbuse: first(bool(canonical?.recentAbuse), bool(ipqs?.recent_abuse)),
     abuseVelocity: first(str(canonical?.abuseVelocity), str(ipqs?.abuse_velocity)),
-    connectionType: first(str(canonical?.connectionType), str(ipqs?.connection_type)),
+    connectionType: first(str(canonical?.connectionType), str(ipqs?.connection_type), str(proxycheck?.type)),
   };
 }
 

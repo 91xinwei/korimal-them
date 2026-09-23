@@ -2,10 +2,26 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { adaptKomariNode } from "@/adapters/komari-node-adapter";
 import { adaptStaticIpNode, adaptStaticIpNodes, maskIpAddress } from "@/adapters/static-ip-adapter";
+import { adaptIpQuality } from "@/adapters/ip-quality-adapter";
 import { DEFAULT_THRESHOLDS, deriveNodeStatus, normalizeNetworkAssetSettings, normalizeStaticIpApiUrl } from "@/config/network";
 import type { NodeDisplay } from "@/types/komari";
 
 describe("StaticIpAdapter", () => {
+  it("keeps a keyless proxycheck reputation result separate from measured quality", () => {
+    const quality = adaptIpQuality({ quality: {
+      checkedAt: "2026-09-23T15:30:11Z",
+      proxycheck: { risk: 0, proxy: false, vpn: false, type: "Business" },
+    } });
+    expect(quality).toMatchObject({
+      provider: "proxycheck",
+      sources: ["proxycheck"],
+      reputationRiskScore: 0,
+      proxyDetected: false,
+      vpnDetected: false,
+      connectionType: "Business",
+    });
+    expect(quality?.score).toBeUndefined();
+  });
   it("normalizes a vendor-neutral record and strips unknown fields", () => {
     const node = adaptStaticIpNode({
       id: 42,

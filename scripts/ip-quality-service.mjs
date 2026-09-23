@@ -2,6 +2,7 @@
 import { createServer } from "node:http";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { isIP } from "node:net";
 
 const port = Number(process.env.IP_QUALITY_PORT || 8787);
 const targetsFile = resolve(process.env.IP_QUALITY_TARGETS_FILE || "./ip-quality-targets.json");
@@ -19,6 +20,24 @@ async function jsonFetch(url, options = {}) {
 async function inspectTarget(target) {
   const quality = { checkedAt: new Date().toISOString() };
   const errors = [];
+  if (process.env.PROXYCHECK_ENABLED !== "0") {
+    try {
+      const result = await jsonFetch(
+        `https://proxycheck.io/v2/${encodeURIComponent(target.ip)}?vpn=1&risk=1&asn=1`,
+      );
+      const record = result[target.ip];
+      if (result.status !== "ok" || !record || !Number.isFinite(Number(record.risk))) {
+        throw new Error(`provider status: ${result.status || "invalid response"}`);
+      }
+      quality.proxycheck = {
+        risk: Number(record.risk),
+        proxy: record.proxy === "yes",
+        vpn: record.type === "VPN",
+        type: record.type,
+        checkedAt: quality.checkedAt,
+      };
+    } catch (error) { errors.push(`proxycheck: ${error.message}`); }
+  }
   if (process.env.IPQS_API_KEY) {
     try {
       quality.ipqs = await jsonFetch(
@@ -41,8 +60,8 @@ async function inspectTarget(target) {
       );
     } catch (error) { errors.push(`abuseipdb: ${error.message}`); }
   }
-  if (!quality.ipqs && !quality.ipinfo && !quality.abuseipdb) {
-    throw new Error("No provider succeeded; configure at least one provider API key");
+  if (!quality.proxycheck && !quality.ipqs && !quality.ipinfo && !quality.abuseipdb) {
+    throw new Error(`No provider succeeded${errors.length ? ` (${errors.join("; ")})` : ""}`);
   }
   return { id: target.id, quality, errors };
 }
@@ -51,7 +70,7 @@ async function loadTargets() {
   const parsed = JSON.parse(await readFile(targetsFile, "utf8"));
   const values = Array.isArray(parsed) ? parsed : parsed.nodes;
   if (!Array.isArray(values)) throw new Error("Targets must be an array or { nodes: [] }");
-  return values.filter((target) => target && String(target.id || "").trim() && String(target.ip || "").trim());
+  return values.filter((target) => target && String(target.id || "").trim() && isIP(String(target.ip || "")) > 0);
 }
 
 async function persist(value) {
@@ -74,6 +93,8 @@ async function refresh() {
         errors.push(...result.value.errors.map((message) => ({ id: result.value.id, message })));
       } else {
         errors.push({ id: targets[index].id, message: result.reason?.message || String(result.reason) });
+        const previous = cache.nodes.find((node) => node.id === targets[index].id);
+        if (previous) nodes.push({ ...previous, quality: { ...previous.quality, stale: true } });
       }
     });
     if (nodes.length === 0 && cache.nodes.length) return cache;

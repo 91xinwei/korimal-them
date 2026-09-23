@@ -492,7 +492,7 @@ export const NodeCard = memo(function NodeCard({
             <StripStat
               icon={<ShieldCheck size={12} strokeWidth={2} />}
               label="IP质量"
-              value={ipQuality?.score == null ? "待检测" : `${ipQuality.score}分`}
+              value={ipQuality?.score != null ? `${ipQuality.score}分` : ipQuality?.reputationRiskScore != null ? `风险${ipQuality.reputationRiskScore}` : "待检测"}
               color={ipQuality?.score == null ? "var(--text-tertiary)" : "#06b6d4"}
             />
           </div>
@@ -581,7 +581,7 @@ export const NodeCard = memo(function NodeCard({
             <strong>{ipQuality?.score ?? "--"}<small>/100</small></strong>
           </div>
           <div className="vps-ip-quality-detail">
-            <strong>{ipQuality ? qualityGrade.label : "待检测"}</strong>
+            <strong>{ipQuality?.score != null ? qualityGrade.label : ipQuality?.reputationRiskScore != null ? "信誉已检测 · 综合分待测速" : "待检测"}</strong>
             <span>风险 {ipQuality?.reputationRiskScore ?? "--"}</span>
             <span>{ipQuality?.sources.map((source) => source.toUpperCase()).join(" + ") || "等待每日检测"}</span>
           </div>

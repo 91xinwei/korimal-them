@@ -30,6 +30,7 @@ export async function fetchIpQualityRecords(
       ipqs: record.ipqs,
       ipinfo: record.ipinfo,
       abuseipdb: record.abuseipdb,
+      proxycheck: record.proxycheck,
       maxmind: record.maxmind,
       qualityScore: record.qualityScore,
       riskScore: record.riskScore,

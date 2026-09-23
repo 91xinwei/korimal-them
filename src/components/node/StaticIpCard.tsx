@@ -130,7 +130,7 @@ export const StaticIpCard = memo(function StaticIpCard({
             </div>
             <div className="static-ip-quality-copy">
               <span><Sparkles size={12} /> IP Quality</span>
-              <strong>{node.quality?.score == null ? "待检测" : grade.label}</strong>
+              <strong>{node.quality?.score == null ? (node.quality?.reputationRiskScore == null ? "待检测" : "信誉已检测 · 综合分待测速") : grade.label}</strong>
               <small>{qualitySources || "等待评分服务"}{node.quality?.stale ? " · stale" : ""}</small>
             </div>
             <div className="static-ip-quality-risk">

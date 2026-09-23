@@ -74,6 +74,7 @@ export type IpQualityProvider =
   | "ipqs"
   | "ipinfo"
   | "abuseipdb"
+  | "proxycheck"
   | "maxmind"
   | "composite"
   | "local"
