@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    {
+      "id": "demo-node",
+      "quality": {
+        "checkedAt": "2026-09-23T08:00:00Z",
+        "ipqs": { "fraud_score": 8, "proxy": false, "vpn": false, "tor": false, "recent_abuse": false },
+        "ipinfo": { "privacy": { "hosting": true, "residential": false } },
+        "abuseipdb": { "data": { "abuseConfidenceScore": 0 } }
+      }
+    }
+  ]
+}

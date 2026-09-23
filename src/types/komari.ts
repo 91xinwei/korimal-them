@@ -214,6 +214,7 @@ export interface ThemeSettings {
   staticStaleAfterSeconds?: number;
   staticRefreshInterval?: number;
   staticIpApiUrl?: string;
+  ipQualityApiUrl?: string;
 }
 
 export interface ThemeBackgroundUpload {

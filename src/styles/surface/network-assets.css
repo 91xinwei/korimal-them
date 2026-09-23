@@ -405,6 +405,16 @@
 [data-highlight="true"] > .server-card { outline: 2px solid color-mix(in srgb, #3b82f6 72%, transparent); outline-offset: 3px; }
 
 .static-ip-card { min-height: 100%; }
+.vps-ip-quality { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 10px 12px; border: 1px solid color-mix(in srgb, #22d3ee 23%, var(--hairline)); border-radius: 11px; background: linear-gradient(105deg, color-mix(in srgb, #06b6d4 9%, var(--surface-sunken)), color-mix(in srgb, #8b5cf6 5%, var(--surface))); }
+.vps-ip-quality-score { display: flex; align-items: center; gap: 6px; color: #06b6d4; }
+.vps-ip-quality-score > span { font-size: 9px; font-weight: 760; letter-spacing: .04em; }
+.vps-ip-quality-score > strong { margin-left: 4px; color: var(--text-primary); font-size: 16px; font-variant-numeric: tabular-nums; }
+.vps-ip-quality-score small { color: var(--text-tertiary); font-size: 7px; }
+.vps-ip-quality-detail { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 7px; }
+.vps-ip-quality-detail strong { color: #10b981; font-size: 9px; }
+.vps-ip-quality-detail span { overflow: hidden; color: var(--text-tertiary); font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.vps-ip-quality[data-tone="poor"] .vps-ip-quality-detail strong { color: #ef4444; }
+.vps-ip-quality[data-tone="fair"] .vps-ip-quality-detail strong { color: #f59e0b; }
 .static-ip-card[data-status="offline"] { opacity: 0.72; filter: saturate(0.7); }
 .static-ip-card[data-status="warning"]::before { background: linear-gradient(90deg, #f97316, transparent 74%); opacity: 0.7; }
 .static-ip-header { align-items: flex-start; }

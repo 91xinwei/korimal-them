@@ -24,6 +24,7 @@ export interface BaseNode {
 
 export interface VpsNode extends BaseNode {
   type: "vps";
+  quality?: StaticIpQuality;
   cpuPercent?: number;
   cpuCores?: number;
   memoryUsedMB?: number;

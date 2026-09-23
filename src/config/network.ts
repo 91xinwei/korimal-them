@@ -16,6 +16,7 @@ export interface NetworkAssetSettings {
   maskStaticIp: boolean;
   mapDefaultZoom: number;
   staticIpApiUrl: string;
+  ipQualityApiUrl: string;
   staticRefreshInterval: number;
   thresholds: NetworkThresholds;
 }
@@ -36,6 +37,7 @@ export const DEFAULT_NETWORK_ASSET_SETTINGS: NetworkAssetSettings = {
   maskStaticIp: true,
   mapDefaultZoom: 1.86,
   staticIpApiUrl: "/api/static-ips",
+  ipQualityApiUrl: "/api/ip-quality",
   staticRefreshInterval: 60_000,
   thresholds: DEFAULT_THRESHOLDS,
 };
@@ -96,6 +98,7 @@ export function normalizeNetworkAssetSettings(value: unknown): NetworkAssetSetti
   const defaults = DEFAULT_NETWORK_ASSET_SETTINGS;
   const environmentUrl = import.meta.env.VITE_STATIC_IP_API_URL;
   const configuredUrl = environmentUrl || record.staticIpApiUrl;
+  const configuredQualityUrl = import.meta.env.VITE_IP_QUALITY_API_URL || record.ipQualityApiUrl;
 
   return {
     showGlobalMap: booleanValue(record.showGlobalMap, defaults.showGlobalMap),
@@ -106,6 +109,7 @@ export function normalizeNetworkAssetSettings(value: unknown): NetworkAssetSetti
     maskStaticIp: booleanValue(record.maskStaticIp, defaults.maskStaticIp),
     mapDefaultZoom: finiteNumber(record.mapDefaultZoom, defaults.mapDefaultZoom, 1.1, 4),
     staticIpApiUrl: normalizeStaticIpApiUrl(configuredUrl, defaults.staticIpApiUrl),
+    ipQualityApiUrl: normalizeStaticIpApiUrl(configuredQualityUrl, defaults.ipQualityApiUrl),
     staticRefreshInterval: finiteNumber(
       record.staticRefreshInterval,
       defaults.staticRefreshInterval,
@@ -151,6 +155,7 @@ export function serializeNetworkAssetSettings(settings: NetworkAssetSettings) {
     maskStaticIp: settings.maskStaticIp,
     mapDefaultZoom: settings.mapDefaultZoom,
     staticIpApiUrl: normalizeStaticIpApiUrl(settings.staticIpApiUrl),
+    ipQualityApiUrl: normalizeStaticIpApiUrl(settings.ipQualityApiUrl, "/api/ip-quality"),
     staticRefreshInterval: settings.staticRefreshInterval,
     latencyWarningThreshold: settings.thresholds.latencyWarning,
     packetLossWarningThreshold: settings.thresholds.packetLossWarning,

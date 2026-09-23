@@ -25,7 +25,10 @@ import {
   AlertTriangle,
   Network,
   WalletCards,
+  ShieldCheck,
 } from "lucide-react";
+import { ipQualityGrade } from "@/adapters/ip-quality-adapter";
+import type { StaticIpQuality } from "@/types/network";
 import { useNode, useNodeTrafficTrend } from "@/hooks/useNode";
 import {
   usePingMini,
@@ -207,6 +210,7 @@ export const NodeCard = memo(function NodeCard({
   radarLatencyMaxMs,
   marqueeStyle,
   showMonthlyPrice = true,
+  ipQuality,
 }: {
   uuid: string;
   resolvedAppearance: ResolvedAppearance;
@@ -220,6 +224,7 @@ export const NodeCard = memo(function NodeCard({
   radarLatencyMaxMs: number;
   marqueeStyle: MarqueeStyleSettings;
   showMonthlyPrice?: boolean;
+  ipQuality?: StaticIpQuality;
 }) {
   const node = useNode(uuid);
   const trafficTrend = useNodeTrafficTrend(uuid);
@@ -302,6 +307,7 @@ export const NodeCard = memo(function NodeCard({
   const monthlyPrice = showMonthlyPrice
     ? formatNodeMonthlyPrice(node.price, node.billing_cycle, node.currency)
     : null;
+  const qualityGrade = ipQualityGrade(ipQuality?.score);
 
   if (cardLayout === "strip") {
     const latencyText =
@@ -483,6 +489,12 @@ export const NodeCard = memo(function NodeCard({
               value={`${uptime.value}${uptime.unit ?? ""}`}
               color="var(--progress-cpu)"
             />
+            <StripStat
+              icon={<ShieldCheck size={12} strokeWidth={2} />}
+              label="IP质量"
+              value={ipQuality?.score == null ? "待检测" : `${ipQuality.score}分`}
+              color={ipQuality?.score == null ? "var(--text-tertiary)" : "#06b6d4"}
+            />
           </div>
         </div>
       </article>
@@ -561,6 +573,19 @@ export const NodeCard = memo(function NodeCard({
             <ExternalLink size={15} strokeWidth={2} />
           </Link>
         </header>
+
+        <section className="vps-ip-quality" data-tone={qualityGrade.tone} aria-label="IP 质量评分">
+          <div className="vps-ip-quality-score">
+            <ShieldCheck size={15} />
+            <span>IP 质量</span>
+            <strong>{ipQuality?.score ?? "--"}<small>/100</small></strong>
+          </div>
+          <div className="vps-ip-quality-detail">
+            <strong>{ipQuality ? qualityGrade.label : "待检测"}</strong>
+            <span>风险 {ipQuality?.reputationRiskScore ?? "--"}</span>
+            <span>{ipQuality?.sources.map((source) => source.toUpperCase()).join(" + ") || "等待每日检测"}</span>
+          </div>
+        </section>
 
         {dashboardStyle === "core" ? (
           <StatusCorePanel

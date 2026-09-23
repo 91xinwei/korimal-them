@@ -442,6 +442,7 @@ export function NodeGrid() {
                       radarLatencyMaxMs={visualStyle.radarLatencyMaxMs}
                       marqueeStyle={visualStyle.marqueeStyle}
                       showMonthlyPrice={networkSettings.showMonthlyPrice}
+                      ipQuality={networkAssets.vpsNodes.find((node) => node.id === uuid)?.quality}
                     />
                   </div>
                 ))}

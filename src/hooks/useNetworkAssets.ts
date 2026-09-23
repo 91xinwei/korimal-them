@@ -5,6 +5,7 @@ import type { NetworkAssetSettings } from "@/config/network";
 import { getPingMiniSnapshot } from "@/hooks/usePingMini";
 import { HttpStaticIpProvider, MockStaticIpProvider } from "@/services/static-ip";
 import type { NodeDisplay } from "@/types/komari";
+import { fetchIpQualityRecords } from "@/services/ip-quality";
 
 export function useNetworkAssets(vpsDisplays: NodeDisplay[], settings: NetworkAssetSettings) {
   const staticProvider = useMemo(
@@ -32,17 +33,39 @@ export function useNetworkAssets(vpsDisplays: NodeDisplay[], settings: NetworkAs
     retry: 1,
   });
 
+  const qualityQuery = useQuery({
+    queryKey: ["ip-quality", settings.ipQualityApiUrl],
+    enabled: settings.showRiskScore,
+    queryFn: async ({ signal }) => {
+      try {
+        return await fetchIpQualityRecords(settings.ipQualityApiUrl, signal);
+      } catch (error) {
+        if (import.meta.env.DEV) return fetchIpQualityRecords("/mock/ip-quality.json", signal);
+        throw error;
+      }
+    },
+    refetchInterval: 60 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+
+  const qualityByNodeId = useMemo(
+    () => new Map((qualityQuery.data ?? []).map((record) => [record.id, record.quality])),
+    [qualityQuery.data],
+  );
+
   const vpsNodes = useMemo(
     () =>
       vpsDisplays.map((node) => {
         const ping = getPingMiniSnapshot(node.uuid);
-        return adaptKomariNode(
+        const adapted = adaptKomariNode(
           node,
           { latency: ping.lastValue, packetLoss: ping.loss },
           settings.thresholds,
         );
+        return { ...adapted, quality: qualityByNodeId.get(node.uuid) };
       }),
-    [settings.thresholds, vpsDisplays],
+    [qualityByNodeId, settings.thresholds, vpsDisplays],
   );
   const staticNodes = settings.showStaticIps ? (staticQuery.data ?? []) : [];
   const allNodes = useMemo(
