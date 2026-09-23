@@ -8,6 +8,7 @@ import type {
   StaticIpUnlock,
 } from "@/types/network";
 import { adaptIpQuality } from "@/adapters/ip-quality-adapter";
+import { getRegionCoordinates } from "@/utils/region";
 
 export interface StaticIpAdapter<TRaw = unknown> {
   adapt(value: TRaw, thresholds: NetworkThresholds, now?: number): StaticIpNode | null;
@@ -146,6 +147,7 @@ export function adaptStaticIpNode(
   const packetLoss = numberValue(raw.packetLoss, 0, 100);
   const riskScore = numberValue(raw.riskScore, 0, 100);
   const updatedAt = text(raw.updatedAt);
+  const regionCoordinates = getRegionCoordinates(text(raw.countryCode));
   const quality = adaptIpQuality({
     quality: raw.quality,
     ipqs: raw.ipqs,
@@ -169,8 +171,8 @@ export function adaptStaticIpNode(
     country: text(raw.country) ?? "Unknown",
     countryCode: text(raw.countryCode)?.toUpperCase(),
     city: text(raw.city),
-    latitude: numberValue(raw.latitude, -90, 90),
-    longitude: numberValue(raw.longitude, -180, 180),
+    latitude: numberValue(raw.latitude, -90, 90) ?? regionCoordinates?.latitude,
+    longitude: numberValue(raw.longitude, -180, 180) ?? regionCoordinates?.longitude,
     provider: text(raw.provider),
     ipv4: text(raw.ipv4),
     ipv6: text(raw.ipv6),

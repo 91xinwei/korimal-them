@@ -46,8 +46,14 @@ const EARTH_BUMP_MAP = "/assets/earth/earth-topology.png";
 const EARTH_SPECULAR_MAP = "/assets/earth/earth-water.png";
 
 function buildPoints(nodes: NetworkAssetNode[]): GlobePoint[] {
+  const overlapping = new Map<string, number>();
   return nodes.flatMap((node) => {
     if (node.latitude == null || node.longitude == null) return [];
+    const coordinateKey = `${node.latitude.toFixed(2)}:${node.longitude.toFixed(2)}`;
+    const overlapIndex = overlapping.get(coordinateKey) ?? 0;
+    overlapping.set(coordinateKey, overlapIndex + 1);
+    const angle = overlapIndex * 2.39996;
+    const radius = overlapIndex === 0 ? 0 : 1.2 * Math.sqrt(overlapIndex);
     return [{
       id: node.id,
       code: node.countryCode ?? "UN",
@@ -61,8 +67,8 @@ function buildPoints(nodes: NetworkAssetNode[]): GlobePoint[] {
       asn: node.type === "static" ? node.asn : undefined,
       ip: node.type === "static" ? maskIpAddress(node.ipv4 ?? node.ipv6) : node.ipv4,
       latency: node.latency,
-      lat: node.latitude,
-      lng: node.longitude,
+      lat: node.latitude + Math.sin(angle) * radius,
+      lng: node.longitude + Math.cos(angle) * radius,
     }];
   });
 }
@@ -203,10 +209,12 @@ function applyAppearance(
 export const NodeGeoPanel = memo(function NodeGeoPanel({
   nodes,
   defaultZoom = 1.86,
+  selectedNodeId,
   onNodeClick,
 }: {
   nodes: NetworkAssetNode[];
   defaultZoom?: number;
+  selectedNodeId?: string | null;
   onNodeClick?: (nodeId: string) => void;
 }) {
   const { resolvedAppearance } = usePreferences();
@@ -243,6 +251,13 @@ export const NodeGeoPanel = memo(function NodeGeoPanel({
     globe.pointsData(points).ringsData(points).htmlElementsData(points).arcsData(arcs);
     syncedPointsSignatureRef.current = pointsSignature;
   }, [arcs, points, pointsSignature]);
+
+  useEffect(() => {
+    const selected = points.find((point) => point.id === selectedNodeId);
+    if (selected && globeRef.current) {
+      globeRef.current.pointOfView({ lat: selected.lat, lng: selected.lng, altitude: Math.max(1.35, defaultZoom - 0.25) }, 650);
+    }
+  }, [defaultZoom, points, selectedNodeId]);
 
   useEffect(() => {
     applyAppearance(globeRef.current, materialRef.current, lightRigRef.current, resolvedAppearance);

@@ -2,6 +2,8 @@
 
 主题不能安全保存供应商 API Key，因此仓库提供 `scripts/ip-quality-service.mjs` 作为同机服务。它按 Komari 节点 UUID 关联公网 IP，默认每 24 小时查询一次并写入本地缓存；页面刷新只读取缓存，不会重复消耗供应商额度。
 
+主题 v1.5.4 自带 `/data/static-ips.json` 静态订阅清单，可直接显示已提供的 Comcast、Astound 和 Glide 三个节点。IP 质量分仍需要本服务至少接入一个真实评分 Provider；未配置时卡片会显示“待检测”。Glide 尚未提供 IPv4，补齐地址后才能检测该节点。
+
 ## 配置
 
 1. 复制 `ip-quality-targets.example.json` 为服务器上的 `ip-quality-targets.json`。

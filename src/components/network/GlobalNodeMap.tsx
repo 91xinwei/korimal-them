@@ -50,6 +50,22 @@ export const GlobalNodeMap = memo(function GlobalNodeMap({
         <div><Route size={13} /><span>Live links</span><strong>{links}</strong></div>
         <div><RadioTower size={13} /><span>Avg RTT</span><strong>{averageLatency == null ? "—" : `${averageLatency} ms`}</strong></div>
       </aside>
+      <nav className="network-map-assets" aria-label="地图节点列表">
+        {nodes.map((node) => (
+          <button
+            key={`${node.type}:${node.id}`}
+            type="button"
+            data-selected={selected?.id === node.id}
+            data-type={node.type}
+            onClick={() => onNodeClick?.(node.id)}
+            title={`${node.name} · ${node.country}`}
+          >
+            <i data-status={node.status} />
+            <span>{node.name}</span>
+            <small>{node.countryCode ?? node.country}</small>
+          </button>
+        ))}
+      </nav>
       {selected && (
         <aside className="network-map-inspector" aria-label="Selected network asset">
           <div className="network-map-inspector-head">
@@ -79,7 +95,7 @@ export const GlobalNodeMap = memo(function GlobalNodeMap({
         </aside>
       )}
       <div className="network-map-reticle" aria-hidden="true" />
-      <NodeGeoPanel nodes={nodes} defaultZoom={defaultZoom} onNodeClick={onNodeClick} />
+      <NodeGeoPanel nodes={nodes} defaultZoom={defaultZoom} selectedNodeId={selectedNodeId} onNodeClick={onNodeClick} />
       <p className="global-node-map-hint"><span>Interactive telemetry</span> Drag to rotate · scroll/pinch to zoom · select a node to locate its card</p>
     </section>
   );

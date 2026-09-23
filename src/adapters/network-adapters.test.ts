@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { adaptKomariNode } from "@/adapters/komari-node-adapter";
 import { adaptStaticIpNode, adaptStaticIpNodes, maskIpAddress } from "@/adapters/static-ip-adapter";
-import { DEFAULT_THRESHOLDS, deriveNodeStatus, normalizeStaticIpApiUrl } from "@/config/network";
+import { DEFAULT_THRESHOLDS, deriveNodeStatus, normalizeNetworkAssetSettings, normalizeStaticIpApiUrl } from "@/config/network";
 import type { NodeDisplay } from "@/types/komari";
 
 describe("StaticIpAdapter", () => {
@@ -114,6 +115,18 @@ describe("StaticIpAdapter", () => {
     const nodes = adaptStaticIpNodes(payload, DEFAULT_THRESHOLDS);
     expect(nodes).toHaveLength(200);
     expect(new Set(nodes.map((node) => node.id)).size).toBe(200);
+  });
+
+  it("loads the shipped subscription catalog and locates every supplied IP on the map", () => {
+    const catalog = JSON.parse(readFileSync(new URL("../../public/data/static-ips.json", import.meta.url), "utf8"));
+    const nodes = adaptStaticIpNodes(catalog.nodes, DEFAULT_THRESHOLDS);
+    expect(nodes.map((node) => node.id)).toEqual([
+      "us-comcast-dedicated-01", "us-astound-dedicated-01", "6RIMRNKR",
+    ]);
+    expect(nodes.every((node) => node.latitude != null && node.longitude != null)).toBe(true);
+    expect(nodes.every((node) => node.quality == null)).toBe(true);
+    expect(normalizeNetworkAssetSettings({ staticIpApiUrl: "/api/static-ips" }).staticIpApiUrl)
+      .toBe("/data/static-ips.json");
   });
 });
 

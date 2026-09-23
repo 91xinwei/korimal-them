@@ -123,19 +123,19 @@ export const StaticIpCard = memo(function StaticIpCard({
           </div>
         </header>
 
-        {node.quality && (
+        {settings.showRiskScore && (
           <div className="static-ip-quality" data-tone={grade.tone}>
-            <div className="static-ip-quality-ring" style={{ "--quality": node.quality.score ?? 0 } as React.CSSProperties}>
-              <strong>{node.quality.score ?? "--"}</strong><small>/100</small>
+            <div className="static-ip-quality-ring" style={{ "--quality": node.quality?.score ?? 0 } as React.CSSProperties}>
+              <strong>{node.quality?.score ?? "--"}</strong><small>/100</small>
             </div>
             <div className="static-ip-quality-copy">
               <span><Sparkles size={12} /> IP Quality</span>
-              <strong>{grade.label}</strong>
-              <small>{qualitySources || "LOCAL"}{node.quality.stale ? " · stale" : ""}</small>
+              <strong>{node.quality?.score == null ? "待检测" : grade.label}</strong>
+              <small>{qualitySources || "等待评分服务"}{node.quality?.stale ? " · stale" : ""}</small>
             </div>
             <div className="static-ip-quality-risk">
               <small>REPUTATION RISK</small>
-              <strong>{node.quality.reputationRiskScore ?? "--"}</strong>
+              <strong>{node.quality?.reputationRiskScore ?? "--"}</strong>
               <span>higher is riskier</span>
             </div>
           </div>

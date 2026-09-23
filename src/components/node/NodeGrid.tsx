@@ -340,12 +340,6 @@ export function NodeGrid() {
     document.getElementById(nodeDomId(nodeId))?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  useEffect(() => {
-    if (!selectedAssetId) return;
-    const timer = window.setTimeout(() => setSelectedAssetId(null), 2400);
-    return () => window.clearTimeout(timer);
-  }, [selectedAssetId]);
-
   return (
     <div className="flex flex-col gap-4 xl:gap-5">
       <div className="home-top-stage" data-earth="false">
@@ -417,6 +411,12 @@ export function NodeGrid() {
         <div className="network-source-error" role="status">
           <span>Static IP 数据暂不可用，VPS 实时监控不受影响。</span>
           <button type="button" onClick={() => void networkAssets.retryStatic()}>重试</button>
+        </div>
+      )}
+      {networkAssets.qualityError && networkSettings.showRiskScore && (
+        <div className="network-source-error" role="status">
+          <span>IP 质量服务尚未连接，评分显示“待检测”。可在主题设置中配置检测接口。</span>
+          <Link to="/?view=theme-manage#static-ip-settings">配置接口</Link>
         </div>
       )}
       <div className="network-asset-sections">

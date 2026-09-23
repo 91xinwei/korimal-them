@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { adaptKomariNode } from "@/adapters/komari-node-adapter";
 import type { NetworkAssetSettings } from "@/config/network";
 import { getPingMiniSnapshot } from "@/hooks/usePingMini";
-import { HttpStaticIpProvider, MockStaticIpProvider } from "@/services/static-ip";
+import { HttpStaticIpProvider } from "@/services/static-ip";
 import type { NodeDisplay } from "@/types/komari";
 import { fetchIpQualityRecords } from "@/services/ip-quality";
 
@@ -12,22 +12,10 @@ export function useNetworkAssets(vpsDisplays: NodeDisplay[], settings: NetworkAs
     () => new HttpStaticIpProvider(settings.staticIpApiUrl, settings.thresholds),
     [settings.staticIpApiUrl, settings.thresholds],
   );
-  const mockProvider = useMemo(
-    () => new MockStaticIpProvider(settings.thresholds),
-    [settings.thresholds],
-  );
-
   const staticQuery = useQuery({
     queryKey: ["static-ips", settings.staticIpApiUrl, settings.thresholds],
     enabled: settings.showStaticIps,
-    queryFn: async ({ signal }) => {
-      try {
-        return await staticProvider.list(signal);
-      } catch (error) {
-        if (import.meta.env.DEV) return mockProvider.list(signal);
-        throw error;
-      }
-    },
+    queryFn: ({ signal }) => staticProvider.list(signal),
     refetchInterval: settings.staticRefreshInterval,
     staleTime: Math.min(settings.staticRefreshInterval / 2, 30_000),
     retry: 1,
@@ -36,14 +24,7 @@ export function useNetworkAssets(vpsDisplays: NodeDisplay[], settings: NetworkAs
   const qualityQuery = useQuery({
     queryKey: ["ip-quality", settings.ipQualityApiUrl],
     enabled: settings.showRiskScore,
-    queryFn: async ({ signal }) => {
-      try {
-        return await fetchIpQualityRecords(settings.ipQualityApiUrl, signal);
-      } catch (error) {
-        if (import.meta.env.DEV) return fetchIpQualityRecords("/mock/ip-quality.json", signal);
-        throw error;
-      }
-    },
+    queryFn: ({ signal }) => fetchIpQualityRecords(settings.ipQualityApiUrl, signal),
     refetchInterval: 60 * 60 * 1000,
     staleTime: 30 * 60 * 1000,
     retry: 1,
@@ -88,6 +69,7 @@ export function useNetworkAssets(vpsDisplays: NodeDisplay[], settings: NetworkAs
     staticLoading: settings.showStaticIps && staticQuery.isPending,
     staticFetching: settings.showStaticIps && staticQuery.isFetching,
     staticError: settings.showStaticIps ? staticQuery.error : null,
+    qualityError: settings.showRiskScore ? qualityQuery.error : null,
     retryStatic: staticQuery.refetch,
   };
 }

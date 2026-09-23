@@ -1,0 +1,55 @@
+{
+  "nodes": [
+    {
+      "id": "us-comcast-dedicated-01",
+      "name": "US Comcast Dedicated Residential",
+      "type": "static",
+      "country": "United States",
+      "countryCode": "US",
+      "ipv4": "48.45.163.45",
+      "provider": "Static Residential (IPv4) (ISP) - Dedicated",
+      "isp": "Comcast",
+      "ipCategory": "residential",
+      "monthlyPrice": 4.31,
+      "currency": "USD",
+      "subscriptionExpiresAt": "2026-10-05T00:00:00Z",
+      "billingCycleDays": 30
+    },
+    {
+      "id": "us-astound-dedicated-01",
+      "name": "US Astound Broadband Dedicated Residential",
+      "type": "static",
+      "country": "United States",
+      "countryCode": "US",
+      "ipv4": "23.182.129.198",
+      "provider": "Static Residential (IPv4) (ISP) - Dedicated",
+      "isp": "Astound Broadband",
+      "ipCategory": "residential",
+      "monthlyPrice": 7.81,
+      "currency": "USD",
+      "subscriptionExpiresAt": "2026-10-05T00:00:00Z",
+      "billingCycleDays": 30
+    },
+    {
+      "id": "6RIMRNKR",
+      "name": "UK Glide Dedicated Residential",
+      "type": "static",
+      "planName": "6RIMRNKR",
+      "country": "United Kingdom",
+      "countryCode": "GB",
+      "provider": "Glide Student & Residential Limited",
+      "isp": "Glide Student & Residential Limited",
+      "asn": "AS42689",
+      "ipCategory": "residential",
+      "bandwidth": "Unlimited",
+      "monthlyPrice": 1.40,
+      "currency": "USD",
+      "subscriptionStartedAt": "2026-09-11T00:00:00Z",
+      "subscriptionExpiresAt": "2026-10-12T00:00:00Z",
+      "billingCycleDays": 31,
+      "autoRenew": true,
+      "nextChargeAt": "2026-10-09T00:00:00Z",
+      "nextBillingAmount": 1.40
+    }
+  ]
+}

@@ -107,20 +107,20 @@ export function NetworkAssetsSettingsPanel({
             onChange={(event) => onChange({ ...settings, ipQualityApiUrl: event.target.value })}
             onBlur={() => update({ ipQualityApiUrl: settings.ipQualityApiUrl })}
           />
-          <small>按 VPS UUID 返回每日评分；可使用仓库内置的 ip-quality-service.mjs，密钥不会进入主题。</small>
+          <small>按节点 ID 返回每日评分；安装仓库的检测服务并配置供应商密钥后，VPS 与 Static IP 卡片会自动显示结果。</small>
         </label>
         <label className="network-settings-field is-wide">
           <span>Static IP API URL</span>
           <input
             type="text"
             value={settings.staticIpApiUrl}
-            placeholder="/api/static-ips"
+            placeholder="/data/static-ips.json"
             autoComplete="off"
             spellCheck={false}
             onChange={(event) => onChange({ ...settings, staticIpApiUrl: event.target.value })}
             onBlur={() => update({ staticIpApiUrl: settings.staticIpApiUrl })}
           />
-          <small>支持 IPQS、IPinfo、AbuseIPDB、MaxMind 的服务端聚合结果；API key/密码必须保留在服务端。</small>
+          <small>默认读取主题内的真实订阅清单；接入其他 Provider 时填写服务端接口 URL。</small>
         </label>
         <label className="network-settings-field">
           <span>刷新间隔（秒）</span>
