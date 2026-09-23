@@ -67,7 +67,15 @@ export function useNetworkAssets(vpsDisplays: NodeDisplay[], settings: NetworkAs
       }),
     [qualityByNodeId, settings.thresholds, vpsDisplays],
   );
-  const staticNodes = settings.showStaticIps ? (staticQuery.data ?? []) : [];
+  const staticNodes = useMemo(
+    () => settings.showStaticIps
+      ? (staticQuery.data ?? []).map((node) => ({
+        ...node,
+        quality: qualityByNodeId.get(node.id) ?? node.quality,
+      }))
+      : [],
+    [qualityByNodeId, settings.showStaticIps, staticQuery.data],
+  );
   const allNodes = useMemo(
     () => [...vpsNodes, ...staticNodes],
     [staticNodes, vpsNodes],

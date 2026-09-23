@@ -129,6 +129,38 @@
       "currency": "USD"
     },
     {
+      "id": "us-comcast-dedicated-01",
+      "name": "US Comcast Dedicated Residential",
+      "type": "static",
+      "country": "United States",
+      "countryCode": "US",
+      "ipv4": "48.45.163.45",
+      "provider": "Static Residential (IPv4) (ISP) - Dedicated",
+      "isp": "Comcast",
+      "ipCategory": "residential",
+      "status": "online",
+      "monthlyPrice": 4.31,
+      "currency": "USD",
+      "subscriptionExpiresAt": "2026-10-05T00:00:00Z",
+      "billingCycleDays": 30
+    },
+    {
+      "id": "us-astound-dedicated-01",
+      "name": "US Astound Broadband Dedicated Residential",
+      "type": "static",
+      "country": "United States",
+      "countryCode": "US",
+      "ipv4": "23.182.129.198",
+      "provider": "Static Residential (IPv4) (ISP) - Dedicated",
+      "isp": "Astound Broadband",
+      "ipCategory": "residential",
+      "status": "online",
+      "monthlyPrice": 7.81,
+      "currency": "USD",
+      "subscriptionExpiresAt": "2026-10-05T00:00:00Z",
+      "billingCycleDays": 30
+    },
+    {
       "id": "jp-isp-01",
       "name": "JP ISP Static 01",
       "type": "static",
