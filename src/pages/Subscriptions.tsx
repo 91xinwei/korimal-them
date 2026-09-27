@@ -7,9 +7,9 @@ import { useVisibleNodes } from "@/hooks/useNode";
 import type { NetworkAssetNode, StaticIpNode, VpsNode } from "@/types/network";
 
 function dateLabel(value: string | undefined) {
-  if (!value) return "未设置";
+  if (!value) return undefined;
   const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString().slice(0, 10) : "未设置";
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString().slice(0, 10) : undefined;
 }
 
 function money(value: number | undefined, currency: string | undefined) {
@@ -37,6 +37,9 @@ function SubscriptionCard({ node, maskStaticIp }: { node: NetworkAssetNode; mask
   const staticNode = node.type === "static" ? node as StaticIpNode : null;
   const vpsNode = node.type === "vps" ? node as VpsNode : null;
   const expiresAt = staticNode?.subscriptionExpiresAt ?? vpsNode?.subscriptionExpiresAt;
+  const startDate = dateLabel(staticNode?.subscriptionStartedAt);
+  const renewalDate = dateLabel(expiresAt);
+  const billingCycleDays = staticNode?.billingCycleDays ?? vpsNode?.billingCycleDays;
   const expiry = expiryState(expiresAt);
   const location = [node.city, node.country].filter(Boolean).join(" · ") || "地区未设置";
   const address = staticNode?.ipv4
@@ -52,7 +55,7 @@ function SubscriptionCard({ node, maskStaticIp }: { node: NetworkAssetNode; mask
           <h3>{node.name}</h3>
           <p>{staticNode?.isp || node.provider || location}</p>
         </div>
-        <span className="subscription-expiry-state" data-tone={expiry.tone}>{expiry.text}</span>
+        {renewalDate && <span className="subscription-expiry-state" data-tone={expiry.tone}>{expiry.text}</span>}
       </div>
 
       <div className="subscription-card-location">
@@ -62,27 +65,27 @@ function SubscriptionCard({ node, maskStaticIp }: { node: NetworkAssetNode; mask
       </div>
 
       <div className="subscription-card-metrics">
-        <div><span>订阅开始</span><strong>{dateLabel(staticNode?.subscriptionStartedAt)}</strong></div>
-        <div><span>到期时间</span><strong>{dateLabel(expiresAt)}</strong></div>
-        <div><span>计费周期</span><strong>{node.type === "static" ? staticNode?.billingCycleDays ?? "未设置" : vpsNode?.billingCycleDays ?? "未设置"}{(staticNode?.billingCycleDays ?? vpsNode?.billingCycleDays) ? " 天" : ""}</strong></div>
+        {startDate && <div><span>订阅开始</span><strong>{startDate}</strong></div>}
+        {renewalDate && <div><span>{staticNode ? "续费时间" : "到期时间"}</span><strong>{renewalDate}</strong></div>}
+        {billingCycleDays != null && <div><span>计费周期</span><strong>{billingCycleDays} 天</strong></div>}
       </div>
 
       <div className="subscription-card-billing">
-        <div>
+        {node.monthlyPrice != null && Number.isFinite(node.monthlyPrice) && <div>
           <span><CircleDollarSign size={15} /> 折算月费</span>
           <strong>{money(node.monthlyPrice, node.currency)}<small>/月</small></strong>
-        </div>
-        <div>
-          <span><CalendarDays size={15} /> {staticNode ? "下次扣费" : "本周期金额"}</span>
-          <strong>{staticNode ? dateLabel(staticNode.nextChargeAt) : money(vpsNode?.billingAmount, node.currency)}</strong>
-        </div>
+        </div>}
+        {vpsNode?.billingAmount != null && <div>
+          <span><CalendarDays size={15} /> 本周期金额</span>
+          <strong>{money(vpsNode.billingAmount, node.currency)}</strong>
+        </div>}
         {staticNode?.nextBillingAmount != null && (
           <div><span>下次扣费金额</span><strong>{money(staticNode.nextBillingAmount, node.currency)}</strong></div>
         )}
       </div>
 
       <div className="subscription-card-foot">
-        <span><ShieldCheck size={14} /> {staticNode ? staticNode.autoRenew == null ? "续费状态未设置" : staticNode.autoRenew ? "自动续费" : "手动续费" : "订阅信息来自 Komari 节点"}</span>
+        {staticNode ? staticNode.autoRenew != null && <span><ShieldCheck size={14} /> {staticNode.autoRenew ? "自动续费" : "手动续费"}</span> : <span><ShieldCheck size={14} /> 订阅信息来自 Komari 节点</span>}
         {vpsNode && <Link to={`/instance/${encodeURIComponent(node.id)}`}>查看节点 →</Link>}
       </div>
     </article>

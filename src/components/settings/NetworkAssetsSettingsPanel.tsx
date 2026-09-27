@@ -120,7 +120,7 @@ export function NetworkAssetsSettingsPanel({
 
       <div className="network-settings-fields">
         <label className="network-settings-field is-wide">
-          <span>VPS IP Quality API URL</span>
+          <span>IP 检测 API URL（VPS / Static IP）</span>
           <input
             type="text"
             value={settings.ipQualityApiUrl}
@@ -130,7 +130,7 @@ export function NetworkAssetsSettingsPanel({
             onChange={(event) => onChange({ ...settings, ipQualityApiUrl: event.target.value })}
             onBlur={() => update({ ipQualityApiUrl: settings.ipQualityApiUrl })}
           />
-          <small>按节点 ID 返回每日信誉结果；默认公开查询无需密钥，正式站点仍需部署仓库的每日检测服务。</small>
+          <small>在主题设置中填写检测服务 URL；按节点 ID 返回每日信誉结果，同时匹配 VPS 和静态 IP。默认 /api/ip-quality；正式站点需部署仓库的每日检测服务。</small>
         </label>
         {settings.staticIpSource === "url" && (
           <label className="network-settings-field is-wide">

@@ -11,7 +11,7 @@ describe("SubscriptionPortfolio", () => {
         id: "home-1", name: "Comcast Home", type: "static", status: "online",
         country: "United States", ipv4: "48.45.163.45", isp: "Comcast",
         ipCategory: "residential", monthlyPrice: 4.31, currency: "USD",
-        subscriptionExpiresAt: "2026-10-05T00:00:00Z", billingCycleDays: 30,
+        subscriptionExpiresAt: "2026-10-05T00:00:00Z", nextChargeAt: "2026-10-01T00:00:00Z", billingCycleDays: 30,
       },
       {
         id: "vps-1", name: "Tokyo VPS", type: "vps", status: "online",
@@ -35,6 +35,10 @@ describe("SubscriptionPortfolio", () => {
     expect(markup).toContain("USD 4.31");
     expect(markup).toContain("USD 14.00");
     expect(markup).toContain("USD 7.00");
+    expect(markup).toContain("续费时间");
+    expect(markup).not.toContain("未设置");
+    expect(markup).not.toContain("下次扣费");
+    expect(markup).not.toContain("2026-10-01");
     expect(markup).not.toContain("48.45.163.45");
   });
 });
