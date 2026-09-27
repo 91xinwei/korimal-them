@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { EyeOff, Globe2, HouseWifi, ShieldCheck, WalletCards } from "lucide-react";
 import {
   normalizeNetworkAssetSettings,
   type NetworkAssetSettings,
+  type ManagedStaticIpEntry,
 } from "@/config/network";
+import { loadBundledStaticIpEntries } from "@/services/static-ip";
 
 function SettingSwitch({
   label,
@@ -44,6 +47,8 @@ export function NetworkAssetsSettingsPanel({
   settings: NetworkAssetSettings;
   onChange: (settings: NetworkAssetSettings) => void;
 }) {
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   const update = (patch: Partial<NetworkAssetSettings>) =>
     onChange(normalizeNetworkAssetSettings({
       ...settings,
@@ -53,6 +58,24 @@ export function NetworkAssetsSettingsPanel({
       riskWarningThreshold: patch.thresholds?.riskWarning ?? settings.thresholds.riskWarning,
       staticStaleAfterSeconds: patch.thresholds?.staleAfterSeconds ?? settings.thresholds.staleAfterSeconds,
     }));
+
+  const patchEntry = (index: number, patch: Partial<ManagedStaticIpEntry>) => {
+    const entries = settings.staticIpNodes.map((entry, entryIndex) => entryIndex === index ? { ...entry, ...patch } : entry);
+    update({ staticIpNodes: entries });
+  };
+
+  const importBundled = async () => {
+    setImporting(true);
+    setImportError(null);
+    try {
+      const entries = await loadBundledStaticIpEntries(settings.thresholds);
+      update({ staticIpSource: "theme", staticIpNodes: entries });
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "读取内置清单失败");
+    } finally {
+      setImporting(false);
+    }
+  };
 
   return (
     <div className="visual-style-section home-modules-settings network-settings-panel">
@@ -65,7 +88,7 @@ export function NetworkAssetsSettingsPanel({
       />
       <SettingSwitch
         label="Static IP"
-        description="启用独立 Provider 数据源；关闭后不发起 Static IP 请求"
+        description="控制首页 Static IP 卡片；独立订阅页面始终可查看已配置清单"
         enabled={settings.showStaticIps}
         onToggle={() => update({ showStaticIps: !settings.showStaticIps })}
         icon={<HouseWifi size={14} />}
@@ -107,21 +130,23 @@ export function NetworkAssetsSettingsPanel({
             onChange={(event) => onChange({ ...settings, ipQualityApiUrl: event.target.value })}
             onBlur={() => update({ ipQualityApiUrl: settings.ipQualityApiUrl })}
           />
-          <small>按节点 ID 返回每日评分；安装仓库的检测服务并配置供应商密钥后，VPS 与 Static IP 卡片会自动显示结果。</small>
+          <small>按节点 ID 返回每日信誉结果；默认公开查询无需密钥，正式站点仍需部署仓库的每日检测服务。</small>
         </label>
-        <label className="network-settings-field is-wide">
-          <span>Static IP API URL</span>
-          <input
-            type="text"
-            value={settings.staticIpApiUrl}
-            placeholder="/data/static-ips.json"
-            autoComplete="off"
-            spellCheck={false}
-            onChange={(event) => onChange({ ...settings, staticIpApiUrl: event.target.value })}
-            onBlur={() => update({ staticIpApiUrl: settings.staticIpApiUrl })}
-          />
-          <small>默认读取主题内的真实订阅清单；接入其他 Provider 时填写服务端接口 URL。</small>
-        </label>
+        {settings.staticIpSource === "url" && (
+          <label className="network-settings-field is-wide">
+            <span>Static IP API URL</span>
+            <input
+              type="text"
+              value={settings.staticIpApiUrl}
+              placeholder="/data/static-ips.json"
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => onChange({ ...settings, staticIpApiUrl: event.target.value })}
+              onBlur={() => update({ staticIpApiUrl: settings.staticIpApiUrl })}
+            />
+            <small>默认读取主题包内 JSON；未来接入供应商时可填自有接口。</small>
+          </label>
+        )}
         <label className="network-settings-field">
           <span>刷新间隔（秒）</span>
           <input
@@ -188,10 +213,58 @@ export function NetworkAssetsSettingsPanel({
       </div>
 
       <div className="network-settings-provider-help">
+        <strong>Static IP 维护方式</strong>
+        <p>选择“主题内维护”后，清单保存在 Komari 的 theme_settings 中，不需要额外 Static IP 服务。公开主题配置会下发完整 IP；脱敏开关只影响画面。</p>
+        <div className="instance-segmented is-scrollable">
+          <button type="button" data-active={settings.staticIpSource === "url"} onClick={() => update({ staticIpSource: "url" })}>主题包 JSON / Provider URL</button>
+          <button type="button" data-active={settings.staticIpSource === "theme"} onClick={() => update({ staticIpSource: "theme" })}>主题内维护</button>
+        </div>
+      </div>
+
+      {settings.staticIpSource === "theme" && (
+        <div className="network-settings-provider-help">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <strong>静态 IP 清单 · {settings.staticIpNodes.length} 条</strong>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="theme-manage-button is-compact" disabled={importing} onClick={() => void importBundled()}>{importing ? "正在导入…" : "导入内置清单"}</button>
+              <button type="button" className="theme-manage-button is-compact is-primary" onClick={() => update({ staticIpNodes: [...settings.staticIpNodes, { id: `static-${Date.now()}`, name: "", ipCategory: "residential" }] })}>添加静态 IP</button>
+            </div>
+          </div>
+          {importError && <p role="status">{importError}</p>}
+          <p>保存后首页、地图与“订阅资产”页同步更新。请勿填写代理账号、密码或服务商 API Key。</p>
+          {settings.staticIpNodes.map((entry, index) => (
+            <div key={index} className="static-ip-editor-entry">
+              <div className="flex items-center justify-between gap-3"><strong>{entry.name || `新静态 IP #${index + 1}`}</strong><button type="button" className="theme-manage-button is-compact is-danger" onClick={() => update({ staticIpNodes: settings.staticIpNodes.filter((_, entryIndex) => entryIndex !== index) })}>移除</button></div>
+              <div className="network-settings-fields">
+                {([
+                  ["id", "唯一 ID"], ["name", "名称"], ["ipv4", "IPv4"], ["country", "国家/地区"], ["countryCode", "国家代码"],
+                  ["isp", "ISP 运营商"], ["provider", "供应商/产品"], ["planName", "套餐名称"], ["asn", "ASN"], ["currency", "币种（USD/EUR）"],
+                ] as const).map(([key, label]) => (
+                  <label className="network-settings-field" key={key}><span>{label}</span><input type="text" value={entry[key] ?? ""} onChange={(event) => patchEntry(index, { [key]: event.target.value })} /></label>
+                ))}
+                <label className="network-settings-field"><span>IP 类型</span><select value={entry.ipCategory ?? "residential"} onChange={(event) => patchEntry(index, { ipCategory: event.target.value })}><option value="residential">静态家庭 IP</option><option value="isp">ISP</option><option value="static-home">家庭宽带</option><option value="datacenter">数据中心</option></select></label>
+                {([
+                  ["monthlyPrice", "月费"], ["billingCycleDays", "计费周期（天）"], ["nextBillingAmount", "下次扣费金额"],
+                ] as const).map(([key, label]) => (
+                  <label className="network-settings-field" key={key}><span>{label}</span><input type="number" min={0} step="any" value={entry[key] ?? ""} onChange={(event) => patchEntry(index, { [key]: event.target.value === "" ? undefined : Number(event.target.value) })} /></label>
+                ))}
+                {([
+                  ["subscriptionStartedAt", "订阅开始"], ["subscriptionExpiresAt", "到期时间"], ["nextChargeAt", "下次扣费"],
+                ] as const).map(([key, label]) => (
+                  <label className="network-settings-field" key={key}><span>{label}</span><input type="date" value={entry[key]?.slice(0, 10) ?? ""} onChange={(event) => patchEntry(index, { [key]: event.target.value })} /></label>
+                ))}
+                <label className="network-settings-field"><span>自动续费</span><select value={entry.autoRenew == null ? "unknown" : entry.autoRenew ? "yes" : "no"} onChange={(event) => patchEntry(index, { autoRenew: event.target.value === "unknown" ? undefined : event.target.value === "yes" })}><option value="unknown">未设置</option><option value="yes">开启</option><option value="no">关闭</option></select></label>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="network-settings-provider-help">
         <strong>Static IP 数据从哪里添加？</strong>
         <p>
-          在上方填写由你自己的服务端提供的 JSON 接口地址。主题只发起读取请求，服务商密钥留在服务端，
-          Provider 返回的数据会由 Adapter 统一转换成 StaticIpNode。
+          可以在上方直接添加并保存到主题设置，不需要自建服务。若将来接入多个供应商，再切换到 Provider URL；
+          两种来源都会经过 Adapter 转换成 StaticIpNode。
         </p>
         <details>
           <summary>查看最小可用 JSON 示例</summary>

@@ -3,17 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { adaptKomariNode } from "@/adapters/komari-node-adapter";
 import type { NetworkAssetSettings } from "@/config/network";
 import { getPingMiniSnapshot } from "@/hooks/usePingMini";
-import { HttpStaticIpProvider } from "@/services/static-ip";
+import { HttpStaticIpProvider, ThemeStaticIpProvider } from "@/services/static-ip";
 import type { NodeDisplay } from "@/types/komari";
 import { fetchIpQualityRecords } from "@/services/ip-quality";
 
 export function useNetworkAssets(vpsDisplays: NodeDisplay[], settings: NetworkAssetSettings) {
   const staticProvider = useMemo(
-    () => new HttpStaticIpProvider(settings.staticIpApiUrl, settings.thresholds),
-    [settings.staticIpApiUrl, settings.thresholds],
+    () => settings.staticIpSource === "theme"
+      ? new ThemeStaticIpProvider(settings.staticIpNodes, settings.thresholds)
+      : new HttpStaticIpProvider(settings.staticIpApiUrl, settings.thresholds),
+    [settings.staticIpSource, settings.staticIpNodes, settings.staticIpApiUrl, settings.thresholds],
   );
   const staticQuery = useQuery({
-    queryKey: ["static-ips", settings.staticIpApiUrl, settings.thresholds],
+    queryKey: ["static-ips", settings.staticIpSource, settings.staticIpSource === "theme" ? settings.staticIpNodes : settings.staticIpApiUrl, settings.thresholds],
     enabled: settings.showStaticIps,
     queryFn: ({ signal }) => staticProvider.list(signal),
     refetchInterval: settings.staticRefreshInterval,

@@ -50,6 +50,8 @@ export interface VpsNode extends BaseNode {
   uptimeDays?: number;
   expireDays?: number;
   billingCycleDays?: number;
+  billingAmount?: number;
+  subscriptionExpiresAt?: string;
 }
 
 export type StaticIpCategory =

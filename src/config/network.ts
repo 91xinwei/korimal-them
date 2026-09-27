@@ -16,9 +16,34 @@ export interface NetworkAssetSettings {
   maskStaticIp: boolean;
   mapDefaultZoom: number;
   staticIpApiUrl: string;
+  staticIpSource: "theme" | "url";
+  staticIpNodes: ManagedStaticIpEntry[];
   ipQualityApiUrl: string;
   staticRefreshInterval: number;
   thresholds: NetworkThresholds;
+}
+
+export interface ManagedStaticIpEntry {
+  id: string;
+  name: string;
+  country?: string;
+  countryCode?: string;
+  city?: string;
+  ipv4?: string;
+  isp?: string;
+  provider?: string;
+  planName?: string;
+  asn?: string;
+  ipCategory?: string;
+  bandwidth?: string;
+  monthlyPrice?: number;
+  currency?: string;
+  subscriptionStartedAt?: string;
+  subscriptionExpiresAt?: string;
+  billingCycleDays?: number;
+  autoRenew?: boolean;
+  nextChargeAt?: string;
+  nextBillingAmount?: number;
 }
 
 export const DEFAULT_THRESHOLDS: NetworkThresholds = {
@@ -37,6 +62,8 @@ export const DEFAULT_NETWORK_ASSET_SETTINGS: NetworkAssetSettings = {
   maskStaticIp: true,
   mapDefaultZoom: 1.86,
   staticIpApiUrl: "/data/static-ips.json",
+  staticIpSource: "url",
+  staticIpNodes: [],
   ipQualityApiUrl: "/api/ip-quality",
   staticRefreshInterval: 60_000,
   thresholds: DEFAULT_THRESHOLDS,
@@ -55,6 +82,48 @@ function finiteNumber(value: unknown, fallback: number, min: number, max: number
 
 function booleanValue(value: unknown, fallback: boolean) {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function managedStaticIpEntries(value: unknown): ManagedStaticIpEntry[] {
+  if (!Array.isArray(value)) return [];
+  const strings = ["country", "countryCode", "city", "ipv4", "isp", "provider", "planName", "asn", "ipCategory", "bandwidth", "currency", "subscriptionStartedAt", "subscriptionExpiresAt", "nextChargeAt"] as const;
+  const numbers = ["monthlyPrice", "billingCycleDays", "nextBillingAmount"] as const;
+  return value.slice(0, 100).flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const record = item as Record<string, unknown>;
+    const entry: ManagedStaticIpEntry = {
+      id: String(record.id ?? "").trim().slice(0, 100),
+      name: String(record.name ?? "").trim().slice(0, 200),
+    };
+    for (const key of strings) {
+      if (typeof record[key] === "string" && record[key].trim()) entry[key] = record[key].trim().slice(0, 300);
+    }
+    for (const key of numbers) {
+      const number = Number(record[key]);
+      if (record[key] != null && record[key] !== "" && Number.isFinite(number) && number >= 0) entry[key] = number;
+    }
+    if (typeof record.autoRenew === "boolean") entry.autoRenew = record.autoRenew;
+    return [entry];
+  });
+}
+
+export function validateManagedStaticIpEntries(entries: ManagedStaticIpEntry[]): string | null {
+  if (entries.length > 100) return "静态 IP 最多维护 100 条";
+  const ids = new Set<string>();
+  for (const [index, entry] of entries.entries()) {
+    if (!entry.id.trim()) return `第 ${index + 1} 条静态 IP 缺少唯一 ID`;
+    if (!entry.name.trim()) return `第 ${index + 1} 条静态 IP 缺少名称`;
+    const id = entry.id.trim().toLowerCase();
+    if (ids.has(id)) return `静态 IP ID 重复：${entry.id}`;
+    ids.add(id);
+    if (entry.ipv4 && !/^(?:\d{1,3}\.){3}\d{1,3}$/.test(entry.ipv4)) return `第 ${index + 1} 条 IPv4 格式不正确`;
+    if (entry.ipv4 && entry.ipv4.split(".").some((part) => Number(part) > 255)) return `第 ${index + 1} 条 IPv4 格式不正确`;
+    if (entry.monthlyPrice != null && !entry.currency) return `第 ${index + 1} 条月费缺少币种`;
+    for (const field of ["subscriptionStartedAt", "subscriptionExpiresAt", "nextChargeAt"] as const) {
+      if (entry[field] && !Number.isFinite(Date.parse(entry[field]))) return `第 ${index + 1} 条日期格式不正确`;
+    }
+  }
+  return null;
 }
 
 export function normalizeStaticIpApiUrl(value: unknown, fallback = "/api/static-ips") {
@@ -112,6 +181,8 @@ export function normalizeNetworkAssetSettings(value: unknown): NetworkAssetSetti
       configuredUrl === "/api/static-ips" ? defaults.staticIpApiUrl : configuredUrl,
       defaults.staticIpApiUrl,
     ),
+    staticIpSource: record.staticIpSource === "theme" ? "theme" : "url",
+    staticIpNodes: managedStaticIpEntries(record.staticIpNodes),
     ipQualityApiUrl: normalizeStaticIpApiUrl(configuredQualityUrl, defaults.ipQualityApiUrl),
     staticRefreshInterval: finiteNumber(
       record.staticRefreshInterval,
@@ -158,6 +229,8 @@ export function serializeNetworkAssetSettings(settings: NetworkAssetSettings) {
     maskStaticIp: settings.maskStaticIp,
     mapDefaultZoom: settings.mapDefaultZoom,
     staticIpApiUrl: normalizeStaticIpApiUrl(settings.staticIpApiUrl, DEFAULT_NETWORK_ASSET_SETTINGS.staticIpApiUrl),
+    staticIpSource: settings.staticIpSource,
+    staticIpNodes: managedStaticIpEntries(settings.staticIpNodes),
     ipQualityApiUrl: normalizeStaticIpApiUrl(settings.ipQualityApiUrl, "/api/ip-quality"),
     staticRefreshInterval: settings.staticRefreshInterval,
     latencyWarningThreshold: settings.thresholds.latencyWarning,

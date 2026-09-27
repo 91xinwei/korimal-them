@@ -7,6 +7,9 @@ const Home = lazy(() => import("@/pages/Home").then((m) => ({ default: m.Home })
 const Instance = lazy(() =>
   import("@/pages/Instance").then((m) => ({ default: m.Instance })),
 );
+const Subscriptions = lazy(() =>
+  import("@/pages/Subscriptions").then((m) => ({ default: m.Subscriptions })),
+);
 const NotFound = lazy(() =>
   import("@/pages/NotFound").then((m) => ({ default: m.NotFound })),
 );
@@ -29,6 +32,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<Loading />}>
             <Home />
+          </Suspense>
+        ),
+      },
+      {
+        path: "subscriptions",
+        element: (
+          <Suspense fallback={<Loading />}>
+            <Subscriptions />
           </Suspense>
         ),
       },

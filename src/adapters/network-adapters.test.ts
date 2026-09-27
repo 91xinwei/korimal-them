@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { adaptKomariNode } from "@/adapters/komari-node-adapter";
 import { adaptStaticIpNode, adaptStaticIpNodes, maskIpAddress } from "@/adapters/static-ip-adapter";
 import { adaptIpQuality } from "@/adapters/ip-quality-adapter";
-import { DEFAULT_THRESHOLDS, deriveNodeStatus, normalizeNetworkAssetSettings, normalizeStaticIpApiUrl } from "@/config/network";
+import { DEFAULT_THRESHOLDS, deriveNodeStatus, normalizeNetworkAssetSettings, normalizeStaticIpApiUrl, serializeNetworkAssetSettings, validateManagedStaticIpEntries } from "@/config/network";
 import type { NodeDisplay } from "@/types/komari";
 
 describe("StaticIpAdapter", () => {
@@ -154,6 +154,23 @@ describe("network status", () => {
     expect(normalizeStaticIpApiUrl("https://example.com/nodes?region=uk")).toBe("https://example.com/nodes?region=uk");
   });
 
+  it("round-trips theme-managed static IP entries without exposing vendor-only fields", () => {
+    const settings = normalizeNetworkAssetSettings({
+      staticIpSource: "theme",
+      staticIpNodes: [{ id: "home-1", name: "Home IP", ipv4: "48.45.163.45", monthlyPrice: 4.31, subscriptionExpiresAt: "2026-10-05", vendorSecret: "hidden" }],
+    });
+    expect(settings.staticIpSource).toBe("theme");
+    expect(settings.staticIpNodes).toMatchObject([{ id: "home-1", name: "Home IP", monthlyPrice: 4.31 }]);
+    expect(settings.staticIpNodes[0]).not.toHaveProperty("vendorSecret");
+    expect(serializeNetworkAssetSettings(settings)).toMatchObject({ staticIpSource: "theme", staticIpNodes: settings.staticIpNodes });
+  });
+
+  it("blocks incomplete or duplicate theme-managed entries before saving", () => {
+    expect(validateManagedStaticIpEntries([{ id: "a", name: "Home" }, { id: "a", name: "Other" }])).toMatch(/重复/);
+    expect(validateManagedStaticIpEntries([{ id: "a", name: "" }])).toMatch(/名称/);
+    expect(validateManagedStaticIpEntries([{ id: "a", name: "Home" }])).toBeNull();
+  });
+
   it("prioritizes offline and derives warning thresholds", () => {
     expect(deriveNodeStatus({ declaredStatus: "offline", latency: 999, thresholds: DEFAULT_THRESHOLDS })).toBe("offline");
     expect(deriveNodeStatus({ latency: 251, thresholds: DEFAULT_THRESHOLDS })).toBe("warning");
@@ -201,7 +218,7 @@ describe("KomariAdapter", () => {
       uptime: 864_000,
       load1: 0.9,
       updatedAt: Date.now(),
-      expired_at: "",
+      expired_at: "2026-10-12T00:00:00Z",
     } as NodeDisplay;
 
     const node = adaptKomariNode(display, { latency: 41, packetLoss: 0 }, DEFAULT_THRESHOLDS);
@@ -210,6 +227,8 @@ describe("KomariAdapter", () => {
       type: "vps",
       status: "online",
       monthlyPrice: 14,
+      billingAmount: 14,
+      subscriptionExpiresAt: "2026-10-12T00:00:00.000Z",
       memoryUsedMB: 1024,
       diskUsedGB: 10,
       trafficUsedGB: 10,

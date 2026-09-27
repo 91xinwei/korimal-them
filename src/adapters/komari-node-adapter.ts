@@ -11,6 +11,11 @@ const BYTES_PER_GB = 1024 ** 3;
 function positive(value: number | undefined | null) {
   return value != null && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
+function validDate(value: string | number | null | undefined) {
+  if (value == null || value === "") return undefined;
+  const timestamp = Date.parse(String(value));
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : undefined;
+}
 function monthlyPrice(price: number, billingCycle: string | number | null | undefined) {
   if (!Number.isFinite(price) || price < 0) return price === -1 ? 0 : undefined;
   if (price === 0) return undefined;
@@ -60,6 +65,8 @@ export function adaptKomariNode(
     packetLoss,
     updatedAt,
     monthlyPrice: monthlyPrice(node.price, node.billing_cycle),
+    billingAmount: node.price > 0 && Number.isFinite(node.price) ? node.price : undefined,
+    subscriptionExpiresAt: validDate(node.expired_at),
     currency: node.currency || undefined,
     cpuPercent: positive(node.cpuPct),
     cpuCores: positive(node.cpu_cores),

@@ -106,6 +106,7 @@ import {
   DEFAULT_NETWORK_ASSET_SETTINGS,
   normalizeNetworkAssetSettings,
   serializeNetworkAssetSettings,
+  validateManagedStaticIpEntries,
   type NetworkAssetSettings,
 } from "@/config/network";
 import {
@@ -652,6 +653,14 @@ export function ThemeManage() {
 
   const handleSave = async () => {
     if (!config?.theme) return;
+    if (draftNetworkSettings.staticIpSource === "theme") {
+      const validationError = validateManagedStaticIpEntries(draftNetworkSettings.staticIpNodes);
+      if (validationError) {
+        setError(validationError);
+        document.getElementById("static-ip-settings")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
     setSaving(true);
     setError(null);
     setMessage(null);

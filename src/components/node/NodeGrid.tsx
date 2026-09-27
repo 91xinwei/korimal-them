@@ -400,6 +400,7 @@ export function NodeGrid() {
         </>
       )}
       <NodeTypeFilter value={assetFilter} nodes={filterCandidates} onChange={setAssetFilter} />
+      <div className="subscription-shortcut"><Link to="/subscriptions">查看订阅资产、到期时间与金额 <span aria-hidden>↗</span></Link></div>
       {visualStyle.homeModules.explorerToolbar && activeTool && (
         <Suspense fallback={<div className="operations-panel is-loading" aria-busy />}>
           {activeTool === "health" && <HealthSummaryPanel nodes={filteredVpsDisplays} />}
