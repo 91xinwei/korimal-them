@@ -36,6 +36,7 @@ import {
   usePingMiniSeries,
   type PingMiniSeries,
 } from "@/hooks/usePingMini";
+import { arrangeCarrierPingRows } from "@/utils/carrierPingRows";
 import {
   formatBytes,
   formatExpireDays,
@@ -158,37 +159,19 @@ function CarrierPingMatrix({
   marqueeStyle: MarqueeStyleSettings;
   redrawKey: string;
 }) {
-  const carriers = [
-    { name: "上海电信", match: /电信|telecom/i },
-    { name: "上海联通", match: /联通|unicom/i },
-    { name: "上海移动", match: /移动|mobile|cmcc/i },
-  ];
-  const used = new Set<number>();
-  const rows = carriers.map((carrier) => {
-    const matched = series.find(
-      (item) =>
-        !used.has(item.taskId) &&
-        carrier.match.test(`${item.taskName} ${item.taskTarget}`),
-    );
-    if (matched) used.add(matched.taskId);
-    return { ...carrier, series: matched };
-  });
-  const unmatched = series.filter((item) => !used.has(item.taskId));
-  rows.forEach((row) => {
-    if (!row.series) row.series = unmatched.shift();
-  });
+  const rows = arrangeCarrierPingRows(series);
 
   return (
     <section className="card-metric-section card-metric-divided carrier-ping-matrix" aria-label="三网延迟与丢包">
       <div className="carrier-ping-title">
         <span>三网测速</span>
-        <small>{series.filter((item) => item.lastValue != null || item.loss != null).length} / 3 条线路有数据</small>
+        <small>{rows.slice(0, 3).filter((row) => row.item && (row.item.lastValue != null || row.item.loss != null)).length} / 3 条线路有数据</small>
       </div>
       {rows.map((row) => (
         <CarrierPingRow
           key={row.name}
           carrierName={row.name}
-          series={row.series}
+          series={row.item}
           marqueeStyle={marqueeStyle}
           redrawKey={redrawKey}
         />

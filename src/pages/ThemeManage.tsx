@@ -152,6 +152,7 @@ import {
 import {
   applyAllClientsToTask,
   applyClientAssignment,
+  countAssignedNodes,
   pruneBindings,
   serializeBindings,
   sortClients,
@@ -456,7 +457,7 @@ export function ThemeManage() {
     draftBindingsSerialized !== sourceBindingsSerialized;
 
   const assignedNodeCount = useMemo(
-    () => Object.values(draftBindings).reduce((total, clients) => total + clients.length, 0),
+    () => countAssignedNodes(draftBindings),
     [draftBindings],
   );
   const backgroundSources = useMemo(
@@ -2363,7 +2364,7 @@ export function ThemeManage() {
         title="主页延迟检测"
         description={
           <>
-            为首页延迟卡片指定对应的 Ping 任务与展示节点，并选择未配置节点的首页展示策略。同一节点可同时绑定上海电信、上海联通、上海移动等多个任务。
+            为每条 Ping 任务选择要展示结果的首页节点卡片。同一节点可同时展示上海电信、上海联通、上海移动等多个任务；这里不会修改 Komari 后台实际监测的节点。
             {" "}
             如果当前还没有可用任务，请先前往
             {" "}
@@ -2426,7 +2427,7 @@ export function ThemeManage() {
               />
             </label>
             <div className="surface-inset flex items-center justify-between gap-3 px-3 py-2 text-[12px] text-[var(--text-secondary)]">
-              <span>首页绑定总数</span>
+              <span>已选择展示节点</span>
               <strong className="text-[var(--text-primary)]">
                 {assignedNodeCount} / {sortedClients.length}
               </strong>
@@ -2485,7 +2486,7 @@ export function ThemeManage() {
                       </div>
                       <div className="mt-2 text-[12px] text-[var(--text-secondary)]">
                         <span className="font-medium text-[var(--text-primary)]">
-                          已绑定 {assigned.length} 个节点
+                          已选择 {assigned.length} 个展示节点
                         </span>
                         <span className="mx-2 text-[var(--text-tertiary)]">·</span>
                         <span title={task.target || ""}>{task.target || "未填写目标"}</span>
@@ -2494,7 +2495,7 @@ export function ThemeManage() {
                         className="mt-2 text-[12px] text-[var(--text-tertiary)]"
                         title={assignedSummary}
                       >
-                        {assignedSummary}
+                          {assigned.length > 0 ? assignedSummary : "尚未选择展示节点"}
                       </p>
                     </div>
 
@@ -2515,7 +2516,7 @@ export function ThemeManage() {
                             : "将所有服务器加入此 Ping 任务；不会移除其他三网任务"
                         }
                       >
-                        应用全部节点
+                        选择全部节点
                       </button>
                       {assigned.length > 0 && (
                         <button
@@ -2529,7 +2530,7 @@ export function ThemeManage() {
                           }}
                           className="theme-manage-button is-compact is-danger"
                         >
-                          清空节点
+                          清空展示
                         </button>
                       )}
                       <button
@@ -2541,13 +2542,14 @@ export function ThemeManage() {
                         }}
                         className="theme-manage-button is-compact"
                       >
-                        {isExpanded ? "收起节点" : "编辑节点"}
+                        {isExpanded ? "收起节点列表" : "选择展示节点"}
                       </button>
                     </div>
                   </div>
 
                   {isExpanded && (
                     <div className="mt-4 border-t border-[var(--hairline)] pt-4">
+                      <p className="mb-3 text-[12px] text-[var(--text-secondary)]">勾选后点击页面顶部“保存设置”；仅控制首页卡片展示，不改变后台 Ping 任务的监测范围。</p>
                       <label className="surface-inset flex items-center gap-2 px-3 py-2">
                         <Search size={14} className="text-[var(--text-tertiary)]" />
                         <input
@@ -2606,6 +2608,15 @@ export function ThemeManage() {
                 </section>
               );
             })}
+          {draftBindingsSerialized !== sourceBindingsSerialized && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[var(--border-strong)] bg-[var(--hover-bg)] px-4 py-3">
+              <span className="text-[12px] text-[var(--text-secondary)]">节点展示选择尚未保存</span>
+              <button type="button" onClick={handleSave} disabled={saving} className="theme-manage-button is-primary">
+                {saving ? <Spinner size={14} /> : <Save size={14} />}
+                {saving ? "保存中" : "保存主题设置"}
+              </button>
+            </div>
+          )}
         </div>
       </InstancePanel>
     </div>

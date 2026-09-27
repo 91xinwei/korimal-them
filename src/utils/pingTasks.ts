@@ -57,3 +57,17 @@ export function invertHomepagePingTaskBindings(
 
   return selectedTaskByClient;
 }
+
+/** Bound nodes display only their selected tasks; unbound nodes keep automatic discovery. */
+export function selectHomepagePingSeries<T extends { taskId: number }>(
+  uuid: string,
+  series: T[],
+  bindings: HomepagePingTaskBindings,
+): T[] {
+  const selectedTaskIds = Object.entries(normalizeHomepagePingTaskBindings(bindings))
+    .filter(([, clients]) => clients.includes(uuid))
+    .map(([taskId]) => Number(taskId));
+  if (selectedTaskIds.length === 0) return series;
+  const allowed = new Set(selectedTaskIds);
+  return series.filter((item) => allowed.has(item.taskId));
+}

@@ -53,6 +53,10 @@ export function pruneBindings(bindings: HomepagePingTaskBindings) {
   return pruned;
 }
 
+export function countAssignedNodes(bindings: HomepagePingTaskBindings) {
+  return new Set(Object.values(pruneBindings(bindings)).flat()).size;
+}
+
 export function applyClientAssignment(
   bindings: HomepagePingTaskBindings,
   taskId: number,

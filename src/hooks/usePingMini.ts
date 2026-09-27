@@ -6,6 +6,7 @@ import type { PingOverviewBucket, PingOverviewItem, PingTask } from "@/types/kom
 import {
   invertHomepagePingTaskBindings,
   normalizeHomepagePingTaskBindings,
+  selectHomepagePingSeries,
   type HomepagePingTaskBindings,
 } from "@/utils/pingTasks";
 
@@ -483,10 +484,10 @@ async function buildOverviewMap(
         taskType: task?.type || "icmp",
       });
     }
-    const visibleEntries = mergeLatestSeries(
+    const visibleEntries = selectHomepagePingSeries(uuid, mergeLatestSeries(
       entries,
       normalizeLatestPingSeries(uuid, latestStatuses[uuid]),
-    )
+    ), bindings)
       .slice(0, 6);
     if (visibleEntries.length > 0) normalizedSeries.set(uuid, visibleEntries);
 
@@ -498,7 +499,9 @@ async function buildOverviewMap(
   }
 
   return {
-    assignmentKey: buildAssignmentKey(selectedTaskByClient),
+    // A node can bind several tasks. Include the full binding set so removing a
+    // secondary task clears its cached series instead of keeping a stale row.
+    assignmentKey: `${buildAssignmentKey(selectedTaskByClient)}|${stringifyBindings(bindings)}`,
     intervalMs:
       refreshIntervals.length > 0
         ? Math.min(...refreshIntervals)

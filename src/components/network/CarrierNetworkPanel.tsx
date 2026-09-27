@@ -4,12 +4,7 @@ import { usePingMiniBuckets, usePingMiniSeries, type PingMiniSeries } from "@/ho
 import type { MarqueeStyleSettings } from "@/hooks/useVisualStyle";
 import { MiniBars } from "@/components/node/MiniBars";
 import { QualityBars } from "@/components/node/QualityBars";
-
-const CARRIERS = [
-  { name: "上海电信", match: /电信|telecom/i, tone: "telecom" },
-  { name: "上海联通", match: /联通|unicom/i, tone: "unicom" },
-  { name: "上海移动", match: /移动|mobile|cmcc/i, tone: "mobile" },
-] as const;
+import { arrangeCarrierPingRows } from "@/utils/carrierPingRows";
 
 function CarrierRow({ item, name, tone, marqueeStyle }: { item?: PingMiniSeries; name: string; tone: string; marqueeStyle: MarqueeStyleSettings }) {
   const buckets = usePingMiniBuckets(item ?? { samples: [] });
@@ -26,14 +21,7 @@ function CarrierRow({ item, name, tone, marqueeStyle }: { item?: PingMiniSeries;
 
 export const CarrierNetworkPanel = memo(function CarrierNetworkPanel({ uuid, marqueeStyle }: { uuid?: string; marqueeStyle: MarqueeStyleSettings }) {
   const series = usePingMiniSeries(uuid ?? "");
-  const used = new Set<number>();
-  const rows = CARRIERS.map((carrier) => {
-    const match = series.find((item) => !used.has(item.taskId) && carrier.match.test(`${item.taskName} ${item.taskTarget}`));
-    if (match) used.add(match.taskId);
-    return { ...carrier, item: match };
-  });
-  const unassigned = series.filter((item) => !used.has(item.taskId));
-  rows.forEach((row) => { if (!row.item) row.item = unassigned.shift(); });
+  const rows = arrangeCarrierPingRows(series);
   const latest = series.flatMap((item) => item.samples).reduce((max, sample) => Math.max(max, sample.time), 0);
 
   return (
