@@ -31,7 +31,7 @@ export const GlobalNodeMap = memo(function GlobalNodeMap({
   const staticNode = selected?.type === "static" ? selected : null;
 
   return (
-    <section className="global-node-map" aria-label="Global network map">
+    <section id="network-map" className="global-node-map" aria-label="Global network map">
       <header className="global-node-map-header">
         <div className="global-node-map-title">
           <span className="global-node-map-kicker"><RadioTower size={11} /> Live network mesh</span>

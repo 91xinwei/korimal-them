@@ -13,7 +13,7 @@ interface PrefsState {
 }
 
 const DEFAULTS: PrefsState = {
-  appearance: "system",
+  appearance: "dark",
   resolvedAppearance: "dark",
 };
 
@@ -61,8 +61,9 @@ function parseStoredAppearance(raw: string | null): Appearance | null {
 
 function readStoredAppearance() {
   const parsed = parseStoredAppearance(localStorage.getItem(APPEARANCE_STORAGE_KEY));
+  const cachedDefault = parseStoredAppearance(localStorage.getItem(APPEARANCE_DEFAULT_STORAGE_KEY));
   const fallback =
-    parseStoredAppearance(localStorage.getItem(APPEARANCE_DEFAULT_STORAGE_KEY)) ??
+    (cachedDefault === "system" ? null : cachedDefault) ??
     DEFAULTS.appearance;
   return {
     appearance: parsed ?? fallback,

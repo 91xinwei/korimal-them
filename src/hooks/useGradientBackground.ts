@@ -106,7 +106,7 @@ export const GRADIENT_BACKGROUND_PRESETS: GradientBackgroundPreset[] = [
 ];
 
 const STORAGE_KEY = "komari-theme-YS:gradient-background";
-const DEFAULT_PRESET = GRADIENT_BACKGROUND_PRESETS[0];
+const DEFAULT_PRESET = GRADIENT_BACKGROUND_PRESETS.find((preset) => preset.id === "aurora")!;
 export const DEFAULT_GRADIENT_BACKGROUND_SETTINGS: GradientBackgroundSettings = {
   enabled: true,
   preset: DEFAULT_PRESET.id,

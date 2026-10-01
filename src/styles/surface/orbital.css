@@ -1,0 +1,120 @@
+/* Orbital Command Deck: presentation only; telemetry and card structure remain unchanged. */
+.orbital-shell {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr);
+  min-height: 100vh;
+  background: #050c1d url("/assets/orbital/starfield.jpg") center top / cover fixed;
+}
+
+.orbital-content { display: flex; min-width: 0; flex-direction: column; }
+.orbital-content main { width: 100%; }
+
+.orbital-sidebar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  height: 100vh;
+  min-height: 650px;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 27px 14px 22px;
+  border-right: 1px solid rgba(104, 151, 235, .22);
+  background:
+    linear-gradient(180deg, rgba(5, 13, 34, .98) 0%, rgba(5, 16, 43, .9) 50%, rgba(5, 14, 39, .42) 100%),
+    url("/assets/orbital/sidebar-planet.jpg") center bottom / 100% auto no-repeat;
+  box-shadow: 16px 0 45px rgba(0, 3, 15, .18);
+}
+.orbital-sidebar::before {
+  position: absolute;
+  inset: 0;
+  border-right: 1px solid rgba(99, 204, 255, .09);
+  content: "";
+  pointer-events: none;
+}
+.orbital-brand { display: flex; align-items: center; gap: 10px; padding: 3px 8px 35px; color: #f2f7ff; }
+.orbital-brand-mark { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(99, 209, 255, .52); border-radius: 11px; color: #82e6ff; background: rgba(22, 103, 190, .2); box-shadow: 0 0 24px rgba(29, 155, 255, .22); }
+.orbital-brand strong { display: block; font-size: 15px; letter-spacing: .16em; line-height: 1.1; }
+.orbital-brand small { display: block; margin-top: 5px; color: #7d94bc; font-size: 7px; font-weight: 750; letter-spacing: .17em; white-space: nowrap; }
+.orbital-nav-caption { padding: 0 14px 10px; color: #5574a3; font-size: 9px; font-weight: 800; letter-spacing: .16em; }
+.orbital-nav { display: grid; gap: 4px; }
+.orbital-nav a { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 13px; border: 1px solid transparent; border-radius: 10px; color: #9cb1d2; font-size: 12px; font-weight: 650; transition: background .2s, color .2s, border-color .2s; }
+.orbital-nav a:hover, .orbital-nav a.is-active { border-color: rgba(90, 180, 255, .2); background: linear-gradient(90deg, rgba(38, 104, 198, .34), rgba(18, 62, 136, .1)); color: #effaff; }
+.orbital-nav a.is-active { box-shadow: inset 2px 0 #50d7ff, 0 0 21px rgba(14, 125, 237, .1); }
+.orbital-nav a.is-active svg { color: #67d9ff; }
+.orbital-sidebar-bottom { display: grid; gap: 8px; margin-top: auto; padding: 16px 10px 2px; }
+.orbital-sidebar-bottom small { color: #7796c6; font-size: 8px; font-weight: 750; letter-spacing: .15em; }
+.orbital-signal { display: flex; align-items: center; gap: 8px; color: #83e6d7; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.orbital-signal span { width: 6px; height: 6px; border-radius: 50%; background: #39e5bd; box-shadow: 0 0 12px #30eec0; }
+
+[data-appearance="dark"] {
+  --bg-0: #050c1d;
+  --bg-1: #08152b;
+  --surface: #0a1932;
+  --surface-elev: #102342;
+  --surface-sunken: #071328;
+  --border: rgba(113, 170, 240, .2);
+  --border-subtle: rgba(113, 170, 240, .13);
+  --border-strong: rgba(113, 170, 240, .34);
+  --hairline: rgba(113, 170, 240, .15);
+  --text-primary: #edf5ff;
+  --text-secondary: #b3c7e5;
+  --text-tertiary: #829cbf;
+  --hover-bg: #173055;
+  --progress-bg: #1a3151;
+  --progress-network: #38c9db;
+  --status-info: #58bbff;
+  --ring: rgba(91, 207, 255, .7);
+  --shadow-card: 0 15px 42px rgba(0, 5, 19, .3), inset 0 1px 0 rgba(176, 223, 255, .05);
+}
+[data-appearance="dark"] body { background: #050c1d; }
+[data-appearance="dark"] .orbital-content { background: linear-gradient(130deg, rgba(5, 11, 29, .88), rgba(9, 22, 49, .73) 58%, rgba(17, 11, 54, .78)); }
+[data-appearance="dark"] .site-footer { border-color: rgba(113, 170, 240, .12); background: rgba(4, 12, 30, .5); }
+
+[data-appearance="dark"] .network-command-center {
+  grid-template-columns: minmax(0, 1.9fr) minmax(260px, .7fr);
+  gap: 16px;
+  min-height: 540px;
+}
+[data-appearance="dark"] .network-command-center .global-node-map { grid-column: 1; grid-row: 1; min-height: 540px; border-color: rgba(69, 145, 247, .35); border-radius: 22px; background: radial-gradient(circle at 52% 51%, rgba(29, 91, 182, .29), transparent 43%), linear-gradient(rgba(67, 153, 249, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(67, 153, 249, .045) 1px, transparent 1px), linear-gradient(135deg, #07142e, #030817 67%, #0c1640); background-size: auto, 38px 38px, 38px 38px, auto; box-shadow: 0 26px 65px rgba(0, 7, 35, .52), inset 0 0 100px rgba(32, 105, 226, .16); }
+[data-appearance="dark"] .global-node-map::after { position: absolute; inset: 12px; border: 1px solid rgba(99, 172, 255, .075); border-radius: 13px; content: ""; pointer-events: none; }
+[data-appearance="dark"] .global-node-map-header strong { font-size: 20px; letter-spacing: -.025em; }
+[data-appearance="dark"] .global-node-map-header { right: 18px; }
+[data-appearance="dark"] .global-node-map-kicker { color: #83dafa !important; font-size: 9px !important; }
+[data-appearance="dark"] .network-map-assets { bottom: auto; max-height: 130px; background: rgba(3, 14, 36, .72); }
+[data-appearance="dark"] .network-map-inspector { top: auto; bottom: 18px; width: 194px; max-height: 178px; gap: 7px; padding: 10px; overflow: hidden; background: rgba(5, 19, 44, .82); }
+[data-appearance="dark"] .network-map-inspector-grid > div { padding-block: 5px; }
+[data-appearance="dark"] .network-command-center .network-overview { grid-column: 2; grid-row: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; border-color: rgba(100, 156, 244, .27); border-radius: 22px; background: linear-gradient(155deg, rgba(16, 39, 81, .84), rgba(5, 17, 44, .88)); box-shadow: 0 24px 50px rgba(0, 4, 24, .28), inset 0 1px 0 rgba(151, 216, 255, .08); }
+[data-appearance="dark"] .network-overview-heading { padding: 24px 20px 18px; }
+[data-appearance="dark"] .network-overview-heading span { color: #70d7fa; font-size: 9px; }
+[data-appearance="dark"] .network-overview-heading strong { font-size: 18px; }
+[data-appearance="dark"] .network-overview-heading em { color: #5cdbcb; font-size: 9px; }
+[data-appearance="dark"] .network-command-center .network-overview-card { min-height: 85px; padding: 16px 13px; }
+[data-appearance="dark"] .network-command-center .network-overview-icon { width: 32px; height: 32px; }
+[data-appearance="dark"] .network-command-center .network-overview-copy > span { font-size: 9px; }
+[data-appearance="dark"] .network-command-center .network-overview-copy strong { font-size: 17px; }
+[data-appearance="dark"] .server-card, [data-appearance="dark"] .static-ip-card, [data-appearance="dark"] .subscription-card { border-color: rgba(99, 159, 230, .25); background: linear-gradient(153deg, rgba(19, 42, 83, .85), rgba(7, 23, 54, .86)); box-shadow: 0 20px 50px rgba(0, 5, 24, .28), inset 0 1px 0 rgba(165, 219, 255, .08); backdrop-filter: blur(18px); }
+[data-appearance="dark"][data-gradient-surfaces="true"] .server-card { border-color: rgba(99, 159, 230, .25); background: linear-gradient(153deg, rgba(19, 42, 83, .85), rgba(7, 23, 54, .86)); box-shadow: 0 20px 50px rgba(0, 5, 24, .28), inset 0 1px 0 rgba(165, 219, 255, .08); }
+[data-appearance="dark"] .subscription-page-header { border-color: rgba(100, 162, 245, .33); background: radial-gradient(circle at 83% 16%, rgba(90, 72, 220, .24), transparent 42%), radial-gradient(circle at 5% 85%, rgba(31, 157, 236, .2), transparent 40%), linear-gradient(125deg, rgba(12, 30, 69, .96), rgba(9, 23, 54, .94)); }
+[data-appearance="dark"] .subscription-kicker, [data-appearance="dark"] .subscription-section-heading span, [data-appearance="dark"] .subscription-card-location code, [data-appearance="dark"] .subscription-card-foot a { color: #69d9f5; }
+[data-appearance="dark"] .subscription-header-counts > div { border-color: rgba(100, 162, 245, .27); background: rgba(19, 43, 85, .62); }
+[data-appearance="dark"] .subscription-card-billing { background: rgba(32, 88, 157, .18); }
+
+@media (max-width: 1200px) {
+  .orbital-shell { grid-template-columns: 170px minmax(0, 1fr); }
+  .orbital-brand { gap: 7px; padding-inline: 3px; }
+  .orbital-brand strong { font-size: 13px; }
+  [data-appearance="dark"] .network-command-center { grid-template-columns: minmax(0, 1fr) 250px; }
+}
+@media (max-width: 980px) {
+  .orbital-shell { display: block; }
+  .orbital-sidebar { display: none; }
+  [data-appearance="dark"] .network-command-center { grid-template-columns: minmax(0, 1fr); }
+  [data-appearance="dark"] .network-command-center .global-node-map, [data-appearance="dark"] .network-command-center .network-overview { grid-column: 1; }
+  [data-appearance="dark"] .network-command-center .network-overview { grid-row: 2; }
+}
+@media (max-width: 600px) {
+  [data-appearance="dark"] .network-command-center .global-node-map { min-height: 420px; }
+  [data-appearance="dark"] .global-node-map-header strong { font-size: 16px; }
+  [data-appearance="dark"] .network-command-center .network-overview-card { min-height: 66px; padding: 10px; }
+}

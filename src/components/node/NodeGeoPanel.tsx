@@ -190,17 +190,17 @@ function applyAppearance(
   globe
     .pointColor((point: object) => pointColor(point as GlobePoint, dark))
     .ringColor((point: object) => pointColor(point as GlobePoint, dark))
-    .atmosphereColor(dark ? "#38bdf8" : "#60a5fa")
-    .atmosphereAltitude(dark ? 0.14 : 0.105);
+    .atmosphereColor(dark ? "#5c9dff" : "#60a5fa")
+    .atmosphereAltitude(dark ? 0.17 : 0.105);
   material.bumpScale = dark ? 0.018 : 0.03;
   material.shininess = dark ? 8 : 14;
   material.emissive.set(dark ? 0x17324f : 0x294f70);
-  material.emissiveIntensity = dark ? 0.48 : 0.28;
+  material.emissiveIntensity = dark ? 0.68 : 0.28;
   material.specular.set(dark ? 0x64748b : 0x475569);
   material.needsUpdate = true;
   if (lights) {
-    lights.ambient.intensity = dark ? 1.85 : 1.45;
-    lights.front.intensity = dark ? 0.9 : 1;
+    lights.ambient.intensity = dark ? 2.05 : 1.45;
+    lights.front.intensity = dark ? 1.05 : 1;
     lights.left.intensity = dark ? 0.62 : 0.48;
     lights.rear.intensity = dark ? 0.52 : 0.38;
   }

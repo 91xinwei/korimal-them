@@ -28,5 +28,5 @@ export const BACKGROUND_POSITION_OPTIONS = [
 ] as const;
 
 export function normalizeAppearance(value: unknown): Appearance {
-  return value === "light" || value === "dark" || value === "system" ? value : "system";
+  return value === "light" || value === "dark" || value === "system" ? value : "dark";
 }

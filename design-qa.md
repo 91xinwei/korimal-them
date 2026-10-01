@@ -86,3 +86,14 @@ Browser-visible errors were not observed; Vite also reported no runtime transfor
 - Comparison history: first compact-browser pass showed the new structure but compressed the map; the final pass used the source-matched 1440 × 1024 viewport and confirmed the intended desktop proportions. No actionable P0/P1/P2 differences remained after normalization.
 
 final result: passed
+
+## Orbital Command Deck refresh — 2026-09-28
+
+- Selected concept 2: `/Users/weixin/.codex/generated_images/01a0bf62-f021-7f30-b263-b8d649d9e7d1/exec-3f5762da-f47b-43c4-b493-302d90ee99a8.png` (1487 × 1058).
+- Implementation inspected in the Codex in-app browser at `http://127.0.0.1:5174/`, desktop viewport 1270 × 720. The browser screenshot API did not provide a persistent file path.
+- Compared the narrow orbital navigation, starfield and ringed-planet assets, cyan/navy telemetry material, real 3D globe, right network overview, subscription cards and static-IP cards. Mock-only counts and charts from the concept were not copied; all displayed assets remain data-backed.
+- Verified sidebar navigation to subscriptions and the Static IP section. The delayed anchor now scrolls after asynchronous assets appear. The three existing static IP assets remain visible in map and cards.
+- The VPS card JSX/data flow, Komari API service layer, footer and floating controls were not removed or replaced.
+- A 431 × 804 mobile viewport on the restored 5173 preview was captured: the navigation rail collapses, the 3D globe and all three static-IP markers remain visible, and the map stays within the viewport. Local Komari backend was unavailable, so this pass could not visually verify live VPS values; the existing VPS card remains unchanged.
+
+final result: passed for desktop and mobile/static-IP previews; live VPS verification remains an installation check.
