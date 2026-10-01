@@ -97,3 +97,8 @@ final result: passed
 - A 431 × 804 mobile viewport on the restored 5173 preview was captured: the navigation rail collapses, the 3D globe and all three static-IP markers remain visible, and the map stays within the viewport. Local Komari backend was unavailable, so this pass could not visually verify live VPS values; the existing VPS card remains unchanged.
 
 final result: passed for desktop and mobile/static-IP previews; live VPS verification remains an installation check.
+
+## Theme thumbnail correction — 2026-10-01
+
+- The packaged `preview.png` and README preview previously showed unrelated anime art. Both now use the selected orbital visual direction; no fabricated node counts or billing figures appear in the thumbnail.
+- The manifest continues to point to `preview.png`, and the release package keeps the official root-level preview path.

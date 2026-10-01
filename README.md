@@ -4,6 +4,8 @@ komari-theme-YS 是一个面向 [Komari](https://github.com/komari-monitor/komar
 
 ![komari-theme-YS Preview](./preview-readme.png)
 
+上图为深空轨道设计方向的主题缩略图；下方截图展示真实界面，具体节点和指标以 Komari 数据为准。
+
 ## 截图
 
 白日模式首页截图：
